@@ -1,0 +1,229 @@
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  ReferenceLine,
+} from 'recharts';
+import { formatCurrency, formatNumber } from '../utils/calculations';
+
+function ChartCard({ title, children }) {
+  return (
+    <div className="bg-white rounded-lg shadow-md p-6">
+      <h3 className="text-md font-semibold text-gray-800 mb-4">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function CustomTooltip({ active, payload, label }) {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
+        <p className="font-semibold text-gray-800">{label}</p>
+        {payload.map((entry, index) => (
+          <p key={index} style={{ color: entry.color }} className="text-sm">
+            {entry.name}: {typeof entry.value === 'number' ?
+              (entry.dataKey.includes('Revenue') || entry.dataKey.includes('Profit') || entry.dataKey.includes('Cost') ?
+                formatCurrency(entry.value) : formatNumber(entry.value)) :
+              entry.value}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+}
+
+export default function ChartsPanel({ results }) {
+  const { monthlyProjections, inputs } = results;
+
+  // Prepare data for charts
+  const chartData = monthlyProjections.map((m, i) => ({
+    name: `M${i + 1}`,
+    fullName: `${m.monthName} Y${m.year}`,
+    month: i + 1,
+    year: m.year,
+    customers: m.totalRetained,
+    newCustomers: m.paidConversions + Math.round(m.referrals),
+    churned: m.monthlyChurn,
+    revenue: m.grossRevenue,
+    netProfit: m.netProfit,
+    cumulativeProfit: monthlyProjections.slice(0, i + 1).reduce((sum, x) => sum + x.netProfit, 0),
+    totalCosts: m.totalOperatingCosts,
+    cac: m.costs.cac,
+    staffing: m.costs.staffing,
+    ccFees: m.costs.ccFees,
+    other: m.costs.office + m.costs.insurance + m.costs.inventory + m.costs.delivery + m.costs.rent,
+  }));
+
+  // Yearly summary for bar chart
+  const yearlyData = [1, 2, 3].map(year => {
+    const yearMonths = monthlyProjections.filter(m => m.year === year);
+    return {
+      name: `Year ${year}`,
+      revenue: yearMonths.reduce((sum, m) => sum + m.grossRevenue, 0),
+      costs: yearMonths.reduce((sum, m) => sum + m.totalOperatingCosts, 0),
+      profit: yearMonths.reduce((sum, m) => sum + m.netProfit, 0),
+    };
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Customer Growth Chart */}
+      <ChartCard title="Customer Growth Over Time">
+        <ResponsiveContainer width="100%" height={300}>
+          <AreaChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="name"
+              tick={{ fontSize: 10 }}
+              interval={5}
+            />
+            <YAxis tick={{ fontSize: 12 }} />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend />
+            <Area
+              type="monotone"
+              dataKey="customers"
+              name="Total Customers"
+              stroke="#2563eb"
+              fill="#3b82f6"
+              fillOpacity={0.6}
+            />
+            <Area
+              type="monotone"
+              dataKey="newCustomers"
+              name="New This Month"
+              stroke="#10b981"
+              fill="#34d399"
+              fillOpacity={0.4}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      {/* Revenue & Profit Chart */}
+      <ChartCard title="Revenue & Profit Trends">
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="name"
+              tick={{ fontSize: 10 }}
+              interval={5}
+            />
+            <YAxis
+              tick={{ fontSize: 12 }}
+              tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend />
+            <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="3 3" />
+            <Line
+              type="monotone"
+              dataKey="revenue"
+              name="Monthly Revenue"
+              stroke="#2563eb"
+              strokeWidth={2}
+              dot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="netProfit"
+              name="Monthly Profit"
+              stroke="#10b981"
+              strokeWidth={2}
+              dot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="cumulativeProfit"
+              name="Cumulative Profit"
+              stroke="#8b5cf6"
+              strokeWidth={2}
+              strokeDasharray="5 5"
+              dot={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      {/* Yearly Summary Bar Chart */}
+      <ChartCard title="Annual Revenue vs Costs">
+        <ResponsiveContainer width="100%" height={250}>
+          <BarChart data={yearlyData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="name" />
+            <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend />
+            <Bar dataKey="revenue" name="Revenue" fill="#3b82f6" />
+            <Bar dataKey="costs" name="Costs" fill="#f87171" />
+            <Bar dataKey="profit" name="Profit" fill="#10b981" />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      {/* Cost Breakdown */}
+      <ChartCard title="Cost Breakdown Over Time">
+        <ResponsiveContainer width="100%" height={250}>
+          <AreaChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="name"
+              tick={{ fontSize: 10 }}
+              interval={5}
+            />
+            <YAxis
+              tick={{ fontSize: 12 }}
+              tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend />
+            <Area
+              type="monotone"
+              dataKey="cac"
+              name="CAC"
+              stackId="1"
+              stroke="#f97316"
+              fill="#fb923c"
+            />
+            <Area
+              type="monotone"
+              dataKey="staffing"
+              name="Staffing"
+              stackId="1"
+              stroke="#8b5cf6"
+              fill="#a78bfa"
+            />
+            <Area
+              type="monotone"
+              dataKey="ccFees"
+              name="CC Fees"
+              stackId="1"
+              stroke="#06b6d4"
+              fill="#22d3ee"
+            />
+            <Area
+              type="monotone"
+              dataKey="other"
+              name="Other"
+              stackId="1"
+              stroke="#6b7280"
+              fill="#9ca3af"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </ChartCard>
+    </div>
+  );
+}
