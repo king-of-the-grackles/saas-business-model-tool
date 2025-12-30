@@ -13,7 +13,10 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import { formatCurrency, formatNumber } from '../utils/calculations';
+import { formatCurrency, formatNumber, calculateARPU, getTotalConversionRate } from '../utils/calculations';
+
+// Color palette for pricing tiers
+const tierColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
 
 function ChartCard({ title, children }) {
   return (
@@ -46,24 +49,42 @@ function CustomTooltip({ active, payload, label }) {
 export default function ChartsPanel({ results }) {
   const { monthlyProjections, inputs } = results;
 
+  // Calculate ARPU and tier data
+  const tiers = inputs.pricingTiers || [];
+  const arpu = calculateARPU(tiers);
+  const totalConversionRate = getTotalConversionRate(tiers);
+
   // Prepare data for charts
-  const chartData = monthlyProjections.map((m, i) => ({
-    name: `M${i + 1}`,
-    fullName: `${m.monthName} Y${m.year}`,
-    month: i + 1,
-    year: m.year,
-    customers: m.totalRetained,
-    newCustomers: m.paidConversions + Math.round(m.referrals),
-    churned: m.monthlyChurn,
-    revenue: m.grossRevenue,
-    netProfit: m.netProfit,
-    cumulativeProfit: monthlyProjections.slice(0, i + 1).reduce((sum, x) => sum + x.netProfit, 0),
-    totalCosts: m.totalOperatingCosts,
-    cac: m.costs.cac,
-    staffing: m.costs.staffing,
-    ccFees: m.costs.ccFees,
-    other: m.costs.office + m.costs.insurance + m.costs.inventory + m.costs.delivery + m.costs.rent,
-  }));
+  const chartData = monthlyProjections.map((m, i) => {
+    const baseData = {
+      name: `M${i + 1}`,
+      fullName: `${m.monthName} Y${m.year}`,
+      month: i + 1,
+      year: m.year,
+      customers: m.totalRetained,
+      newCustomers: m.paidConversions + Math.round(m.referrals),
+      churned: m.monthlyChurn,
+      revenue: m.grossRevenue,
+      netProfit: m.netProfit,
+      cumulativeProfit: monthlyProjections.slice(0, i + 1).reduce((sum, x) => sum + x.netProfit, 0),
+      totalCosts: m.totalOperatingCosts,
+      cac: m.costs.cac,
+      staffing: m.costs.staffing,
+      ccFees: m.costs.ccFees,
+      other: m.costs.office + m.costs.insurance + m.costs.inventory + m.costs.delivery + m.costs.rent,
+      arpu: arpu,
+    };
+
+    // Add per-tier revenue breakdown
+    if (tiers.length > 0 && totalConversionRate > 0) {
+      tiers.forEach((tier) => {
+        const tierWeight = tier.conversionRate / totalConversionRate;
+        baseData[`tier_${tier.id}`] = m.totalRetained * tier.monthlyPrice * tierWeight;
+      });
+    }
+
+    return baseData;
+  });
 
   // Yearly summary for bar chart
   const yearlyData = [1, 2, 3].map(year => {
@@ -156,6 +177,40 @@ export default function ChartsPanel({ results }) {
           </LineChart>
         </ResponsiveContainer>
       </ChartCard>
+
+      {/* Revenue by Tier Chart */}
+      {tiers.length > 0 && (
+        <ChartCard title="Revenue by Pricing Tier">
+          <ResponsiveContainer width="100%" height={300}>
+            <AreaChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis
+                dataKey="name"
+                tick={{ fontSize: 10 }}
+                interval={5}
+              />
+              <YAxis
+                tick={{ fontSize: 12 }}
+                tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend />
+              {tiers.map((tier, index) => (
+                <Area
+                  key={tier.id}
+                  type="monotone"
+                  dataKey={`tier_${tier.id}`}
+                  name={tier.name}
+                  stackId="tiers"
+                  stroke={tierColors[index % tierColors.length]}
+                  fill={tierColors[index % tierColors.length]}
+                  fillOpacity={0.7}
+                />
+              ))}
+            </AreaChart>
+          </ResponsiveContainer>
+        </ChartCard>
+      )}
 
       {/* Yearly Summary Bar Chart */}
       <ChartCard title="Annual Revenue vs Costs">
