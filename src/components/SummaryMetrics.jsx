@@ -37,6 +37,8 @@ export default function SummaryMetrics({ results }) {
     ltvCacRatio,
     cacPayback,
     grossMargin,
+    arpu,
+    totalConversionRate,
     netProfitFY1,
     netProfitFY2,
     netProfitFY3,
@@ -103,7 +105,12 @@ export default function SummaryMetrics({ results }) {
       {/* Unit Economics */}
       <div className="mb-6">
         <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Unit Economics</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <MetricCard
+            label="ARPU"
+            value={formatCurrency(arpu)}
+            subtext={`${inputs.pricingTiers?.length || 1} pricing tier${inputs.pricingTiers?.length !== 1 ? 's' : ''}`}
+          />
           <MetricCard
             label="LTV"
             value={formatCurrency(ltv)}
@@ -157,8 +164,8 @@ export default function SummaryMetrics({ results }) {
             highlight
           />
           <MetricCard
-            label="Conversion Rate"
-            value={formatPercent(inputs.paidConversionRate)}
+            label="Total Conversion"
+            value={formatPercent(totalConversionRate)}
             subtext="Traffic to customers"
           />
           <MetricCard

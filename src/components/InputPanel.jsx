@@ -1,4 +1,6 @@
+import { useState, useEffect } from 'react';
 import { formatCurrency, formatPercent } from '../utils/calculations';
+import TierManager from './TierManager';
 
 function SliderInput({ label, value, onChange, min, max, step, format = 'number', hint }) {
   const displayValue = format === 'percent' ? formatPercent(value) :
@@ -26,19 +28,20 @@ function SliderInput({ label, value, onChange, min, max, step, format = 'number'
 }
 
 function NumberInput({ label, value, onChange, min, max, step, prefix = '', suffix = '', hint }) {
+  const [localValue, setLocalValue] = useState(value.toString());
+
+  useEffect(() => {
+    setLocalValue(value.toString());
+  }, [value]);
+
   const handleChange = (e) => {
-    const val = e.target.value;
-    if (val === '') {
-      onChange(0);
-    } else {
-      onChange(parseFloat(val) || 0);
-    }
+    setLocalValue(e.target.value);
   };
 
-  const handleBlur = (e) => {
-    // Normalize: strip leading zeros by re-parsing
-    const normalized = parseFloat(e.target.value) || 0;
-    onChange(normalized);
+  const handleBlur = () => {
+    const parsed = parseFloat(localValue) || 0;
+    setLocalValue(parsed.toString());
+    onChange(parsed);
   };
 
   return (
@@ -53,7 +56,7 @@ function NumberInput({ label, value, onChange, min, max, step, prefix = '', suff
           min={min}
           max={max}
           step={step}
-          value={value}
+          value={localValue}
           onChange={handleChange}
           onBlur={handleBlur}
           className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${prefix ? 'pl-7' : ''} ${suffix ? 'pr-8' : ''}`}
@@ -68,6 +71,22 @@ function NumberInput({ label, value, onChange, min, max, step, prefix = '', suff
 }
 
 function PercentInput({ label, value, onChange, min = 0, max = 1, step = 0.001, hint }) {
+  const [localValue, setLocalValue] = useState((value * 100).toFixed(1));
+
+  useEffect(() => {
+    setLocalValue((value * 100).toFixed(1));
+  }, [value]);
+
+  const handleChange = (e) => {
+    setLocalValue(e.target.value);
+  };
+
+  const handleBlur = () => {
+    const parsed = parseFloat(localValue) || 0;
+    setLocalValue(parsed.toFixed(1));
+    onChange(parsed / 100);
+  };
+
   return (
     <div className="mb-4">
       <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
@@ -77,8 +96,9 @@ function PercentInput({ label, value, onChange, min = 0, max = 1, step = 0.001, 
           min={min * 100}
           max={max * 100}
           step={step * 100}
-          value={(value * 100).toFixed(1)}
-          onChange={(e) => onChange(parseFloat(e.target.value) / 100 || 0)}
+          value={localValue}
+          onChange={handleChange}
+          onBlur={handleBlur}
           className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
@@ -141,19 +161,9 @@ export default function InputPanel({ inputs, onInputChange }) {
         />
       </div>
 
-      {/* Conversion & Retention */}
+      {/* Retention */}
       <div className="mb-6 pb-6 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Conversion & Retention</h3>
-        <SliderInput
-          label="Paid Conversion Rate"
-          value={inputs.paidConversionRate}
-          onChange={(v) => onInputChange('paidConversionRate', v)}
-          min={0.005}
-          max={0.1}
-          step={0.001}
-          format="percent"
-          hint="0.78% to 3% is great depending on segment"
-        />
+        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Retention</h3>
         <SliderInput
           label="Customer Referral Rate"
           value={inputs.customerReferralRate}
@@ -176,18 +186,18 @@ export default function InputPanel({ inputs, onInputChange }) {
         />
       </div>
 
+      {/* Pricing Tiers */}
+      <div className="mb-6 pb-6 border-b border-gray-200">
+        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Pricing & Conversion</h3>
+        <TierManager
+          tiers={inputs.pricingTiers}
+          onTiersChange={(newTiers) => onInputChange('pricingTiers', newTiers)}
+        />
+      </div>
+
       {/* Revenue & CAC */}
       <div className="mb-6 pb-6 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Revenue & Acquisition</h3>
-        <NumberInput
-          label="Monthly Revenue per Customer"
-          value={inputs.monthlyRevenuePerCustomer}
-          onChange={(v) => onInputChange('monthlyRevenuePerCustomer', v)}
-          min={1}
-          max={1000}
-          step={1}
-          prefix="$"
-        />
+        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Margins & Acquisition</h3>
         <SliderInput
           label="Gross Margin"
           value={inputs.grossMargin}

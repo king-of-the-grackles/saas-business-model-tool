@@ -4,10 +4,11 @@ export const DEFAULT_INPUTS = {
   minimumSuccessCriteria: 1000000,
   monthlyGrowthRate: 0.02,
   startingPaidTraffic: 2000,
-  paidConversionRate: 0.02,
+  pricingTiers: [
+    { id: 'tier-1', name: 'Standard', monthlyPrice: 15, conversionRate: 0.02 },
+  ],
   customerReferralRate: 0.05,
   estimatedCAC: 15,
-  monthlyRevenuePerCustomer: 15,
   monthlyChurn: 0.05, // Changed from 0.12 - industry benchmark is 3.5-5% monthly
   grossMargin: 0.80, // 80% typical for SaaS (Craft Ventures: 75%+ required)
   ccProcessingFees: 0.025,
@@ -57,14 +58,58 @@ export function calculateLTVCACRatio(ltv, cac) {
   return ltv / cac;
 }
 
+// Calculate total conversion rate from all pricing tiers
+export function getTotalConversionRate(tiers) {
+  if (!tiers || tiers.length === 0) return 0;
+  return tiers.reduce((sum, tier) => sum + tier.conversionRate, 0);
+}
+
+// Calculate ARPU (Average Revenue Per User) - weighted by conversion rates
+export function calculateARPU(tiers) {
+  if (!tiers || tiers.length === 0) return 0;
+  const totalConversionRate = getTotalConversionRate(tiers);
+  if (totalConversionRate === 0) return 0;
+
+  return tiers.reduce((sum, tier) => {
+    const weight = tier.conversionRate / totalConversionRate;
+    return sum + (tier.monthlyPrice * weight);
+  }, 0);
+}
+
+// Generate unique tier ID
+export function generateTierId() {
+  return 'tier-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
+}
+
+// Validate tier configuration
+export function validateTiers(tiers) {
+  if (!tiers || tiers.length === 0) {
+    return { valid: false, error: 'At least one pricing tier is required' };
+  }
+  const totalRate = getTotalConversionRate(tiers);
+  if (totalRate > 1) {
+    return { valid: false, error: 'Total conversion rate cannot exceed 100%' };
+  }
+  if (totalRate === 0) {
+    return { valid: false, error: 'At least one tier must have a conversion rate > 0' };
+  }
+  return { valid: true };
+}
+
 // Calculate summary metrics from inputs
 export function calculateSummaryMetrics(inputs) {
   const acl = calculateACL(inputs.monthlyChurn);
   const grossMargin = inputs.grossMargin || 0.80;
-  const ltv = calculateLTV(inputs.monthlyRevenuePerCustomer, acl, grossMargin);
+
+  // Calculate ARPU from pricing tiers
+  const arpu = calculateARPU(inputs.pricingTiers);
+  const totalConversionRate = getTotalConversionRate(inputs.pricingTiers);
+
+  // LTV and CAC payback use ARPU instead of single price
+  const ltv = calculateLTV(arpu, acl, grossMargin);
   const ltvCacRatio = calculateLTVCACRatio(ltv, inputs.estimatedCAC);
   const cagr = calculateCAGR(inputs.monthlyGrowthRate);
-  const cacPayback = calculateCACPayback(inputs.monthlyRevenuePerCustomer, grossMargin, inputs.estimatedCAC);
+  const cacPayback = calculateCACPayback(arpu, grossMargin, inputs.estimatedCAC);
 
   return {
     cagr,
@@ -73,6 +118,8 @@ export function calculateSummaryMetrics(inputs) {
     ltvCacRatio,
     cacPayback,
     grossMargin,
+    arpu,
+    totalConversionRate,
   };
 }
 
@@ -80,6 +127,10 @@ export function calculateSummaryMetrics(inputs) {
 export function calculateMonthlyProjections(inputs) {
   const months = [];
   let previousRetained = 0;
+
+  // Calculate ARPU and total conversion rate from pricing tiers
+  const arpu = calculateARPU(inputs.pricingTiers);
+  const totalConversionRate = getTotalConversionRate(inputs.pricingTiers);
 
   for (let i = 0; i < 36; i++) {
     const year = Math.floor(i / 12) + 1;
@@ -92,8 +143,8 @@ export function calculateMonthlyProjections(inputs) {
     const organicTraffic = inputs.organicTraffic;
     const totalTraffic = paidTraffic + organicTraffic;
 
-    // Paid conversions from traffic
-    const paidConversions = Math.round(paidTraffic * inputs.paidConversionRate);
+    // Paid conversions from traffic (using total conversion rate from all tiers)
+    const paidConversions = Math.round(paidTraffic * totalConversionRate);
 
     // Previous month retained customers
     const prevRetainedForChurn = previousRetained;
@@ -118,8 +169,8 @@ export function calculateMonthlyProjections(inputs) {
       referrals = Math.round((totalRetained * inputs.customerReferralRate) * 100) / 100;
     }
 
-    // Revenue
-    const grossRevenue = totalRetained * inputs.monthlyRevenuePerCustomer;
+    // Revenue (using ARPU from pricing tiers)
+    const grossRevenue = totalRetained * arpu;
 
     // Operating costs
     const ccFees = grossRevenue * inputs.ccProcessingFees;
