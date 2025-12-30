@@ -61,6 +61,7 @@ export default function ChartsPanel({ results }) {
       fullName: `${m.monthName} Y${m.year}`,
       month: i + 1,
       year: m.year,
+      traffic: Math.round(m.totalTraffic),
       customers: m.totalRetained,
       newCustomers: m.paidConversions + Math.round(m.referrals),
       churned: m.monthlyChurn,
@@ -127,6 +128,47 @@ export default function ChartsPanel({ results }) {
               stroke="#10b981"
               fill="#34d399"
               fillOpacity={0.4}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      {/* Customer Acquisition Funnel */}
+      <ChartCard title="Customer Acquisition Funnel">
+        <ResponsiveContainer width="100%" height={300}>
+          <AreaChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis
+              dataKey="name"
+              tick={{ fontSize: 10 }}
+              interval={5}
+            />
+            <YAxis tick={{ fontSize: 12 }} />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend />
+            <Area
+              type="monotone"
+              dataKey="traffic"
+              name="Total Traffic"
+              stroke="#6366f1"
+              fill="#818cf8"
+              fillOpacity={0.6}
+            />
+            <Area
+              type="monotone"
+              dataKey="newCustomers"
+              name="New Customers"
+              stroke="#10b981"
+              fill="#34d399"
+              fillOpacity={0.6}
+            />
+            <Area
+              type="monotone"
+              dataKey="customers"
+              name="Total Retained"
+              stroke="#3b82f6"
+              fill="#60a5fa"
+              fillOpacity={0.6}
             />
           </AreaChart>
         </ResponsiveContainer>

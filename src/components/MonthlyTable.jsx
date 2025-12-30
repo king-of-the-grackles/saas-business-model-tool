@@ -1,6 +1,37 @@
 import { useState } from 'react';
 import { formatCurrency, formatPercent, formatNumber } from '../utils/calculations';
 
+function CostBreakdownRow({ costs }) {
+  const costItems = [
+    { label: 'CC Fees', value: costs.ccFees },
+    { label: 'CAC', value: costs.cac },
+    { label: 'Staffing', value: costs.staffing },
+    { label: 'Office', value: costs.office },
+    { label: 'Insurance', value: costs.insurance },
+    { label: 'Rent', value: costs.rent },
+  ];
+
+  // Add inventory & delivery only if > 0
+  const inventoryDelivery = (costs.inventory || 0) + (costs.delivery || 0);
+  if (inventoryDelivery > 0) {
+    costItems.push({ label: 'Inv/Del', value: inventoryDelivery });
+  }
+
+  return (
+    <tr className="bg-gray-50/50">
+      <td colSpan={10} className="px-3 py-1.5">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+          {costItems.map(item => (
+            <span key={item.label}>
+              {item.label}: <span className="text-gray-700">{formatCurrency(item.value)}</span>
+            </span>
+          ))}
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 function YearSection({ year, months, yearlySummary }) {
   const [isOpen, setIsOpen] = useState(year === 1);
 
