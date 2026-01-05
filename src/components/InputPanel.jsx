@@ -192,7 +192,7 @@ export default function InputPanel({ inputs, onInputChange }) {
       </CollapsibleSection>
 
       {/* Traffic & Growth */}
-      <CollapsibleSection title="Traffic & Growth" defaultOpen={true}>
+      <CollapsibleSection title="Traffic & Growth" defaultOpen={false}>
         <NumberInput
           label="Starting Monthly Paid Traffic"
           value={inputs.startingPaidTraffic}
@@ -225,7 +225,7 @@ export default function InputPanel({ inputs, onInputChange }) {
       </CollapsibleSection>
 
       {/* Retention */}
-      <CollapsibleSection title="Retention" defaultOpen={true}>
+      <CollapsibleSection title="Retention" defaultOpen={false}>
         <SliderInput
           label="Customer Referral Rate"
           value={inputs.customerReferralRate}
@@ -251,7 +251,7 @@ export default function InputPanel({ inputs, onInputChange }) {
       </CollapsibleSection>
 
       {/* Pricing Tiers */}
-      <CollapsibleSection title="Pricing & Conversion" defaultOpen={true}>
+      <CollapsibleSection title="Pricing & Conversion" defaultOpen={false}>
         <TierManager
           tiers={inputs.pricingTiers}
           onTiersChange={(newTiers) => onInputChange('pricingTiers', newTiers)}
@@ -259,7 +259,7 @@ export default function InputPanel({ inputs, onInputChange }) {
       </CollapsibleSection>
 
       {/* Revenue & CAC */}
-      <CollapsibleSection title="Margins & Acquisition" defaultOpen={true}>
+      <CollapsibleSection title="Margins & Acquisition" defaultOpen={false}>
         <SliderInput
           label="Gross Margin"
           value={inputs.grossMargin}
