@@ -9,9 +9,9 @@ function SliderInput({ label, value, onChange, min, max, step, format = 'number'
 
   return (
     <div className="mb-4">
-      <div className="flex justify-between items-center mb-1">
+      <div className="flex justify-between items-center mb-1.5">
         <label className="text-sm font-medium text-gray-700">{label}</label>
-        <span className="text-sm font-semibold text-blue-600">{displayValue}</span>
+        <span className="text-sm font-semibold font-mono text-brand-600">{displayValue}</span>
       </div>
       <input
         type="range"
@@ -20,9 +20,9 @@ function SliderInput({ label, value, onChange, min, max, step, format = 'number'
         step={step}
         value={value}
         onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+        className="w-full h-2 bg-brand-100 rounded-lg appearance-none cursor-pointer accent-brand-600 hover:accent-brand-700 transition-all"
       />
-      {hint && <p className="text-xs text-gray-500 mt-1">{hint}</p>}
+      {hint && <p className="text-xs text-gray-500 mt-1.5">{hint}</p>}
     </div>
   );
 }
@@ -46,10 +46,10 @@ function NumberInput({ label, value, onChange, min, max, step, prefix = '', suff
 
   return (
     <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
       <div className="relative">
         {prefix && (
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">{prefix}</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">{prefix}</span>
         )}
         <input
           type="number"
@@ -59,13 +59,13 @@ function NumberInput({ label, value, onChange, min, max, step, prefix = '', suff
           value={localValue}
           onChange={handleChange}
           onBlur={handleBlur}
-          className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${prefix ? 'pl-7' : ''} ${suffix ? 'pr-8' : ''}`}
+          className={`w-full px-3 py-2.5 font-mono border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors ${prefix ? 'pl-7' : ''} ${suffix ? 'pr-8' : ''}`}
         />
         {suffix && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">{suffix}</span>
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">{suffix}</span>
         )}
       </div>
-      {hint && <p className="text-xs text-gray-500 mt-1">{hint}</p>}
+      {hint && <p className="text-xs text-gray-500 mt-1.5">{hint}</p>}
     </div>
   );
 }
@@ -89,7 +89,7 @@ function PercentInput({ label, value, onChange, min = 0, max = 1, step = 0.001, 
 
   return (
     <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
       <div className="relative">
         <input
           type="number"
@@ -99,23 +99,23 @@ function PercentInput({ label, value, onChange, min = 0, max = 1, step = 0.001, 
           value={localValue}
           onChange={handleChange}
           onBlur={handleBlur}
-          className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full px-3 py-2.5 pr-8 font-mono border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors"
         />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">%</span>
       </div>
-      {hint && <p className="text-xs text-gray-500 mt-1">{hint}</p>}
+      {hint && <p className="text-xs text-gray-500 mt-1.5">{hint}</p>}
     </div>
   );
 }
 
 export default function InputPanel({ inputs, onInputChange }) {
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-lg font-bold text-gray-900 mb-6">Model Assumptions</h2>
+    <div className="card p-6">
+      <h2 className="text-lg font-bold text-brand-800 mb-6">Model Assumptions</h2>
 
       {/* Target */}
-      <div className="mb-6 pb-6 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Target</h3>
+      <div className="mb-6 pb-6 border-b border-gray-100">
+        <h3 className="section-header mb-4">Target</h3>
         <NumberInput
           label="Minimum Success Criteria (Net Profit FY3)"
           value={inputs.minimumSuccessCriteria}
@@ -129,8 +129,8 @@ export default function InputPanel({ inputs, onInputChange }) {
       </div>
 
       {/* Traffic & Growth */}
-      <div className="mb-6 pb-6 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Traffic & Growth</h3>
+      <div className="mb-6 pb-6 border-b border-gray-100">
+        <h3 className="section-header mb-4">Traffic & Growth</h3>
         <NumberInput
           label="Starting Monthly Paid Traffic"
           value={inputs.startingPaidTraffic}
@@ -162,8 +162,8 @@ export default function InputPanel({ inputs, onInputChange }) {
       </div>
 
       {/* Retention */}
-      <div className="mb-6 pb-6 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Retention</h3>
+      <div className="mb-6 pb-6 border-b border-gray-100">
+        <h3 className="section-header mb-4">Retention</h3>
         <SliderInput
           label="Customer Referral Rate"
           value={inputs.customerReferralRate}
@@ -187,8 +187,8 @@ export default function InputPanel({ inputs, onInputChange }) {
       </div>
 
       {/* Pricing Tiers */}
-      <div className="mb-6 pb-6 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Pricing & Conversion</h3>
+      <div className="mb-6 pb-6 border-b border-gray-100">
+        <h3 className="section-header mb-4">Pricing & Conversion</h3>
         <TierManager
           tiers={inputs.pricingTiers}
           onTiersChange={(newTiers) => onInputChange('pricingTiers', newTiers)}
@@ -196,8 +196,8 @@ export default function InputPanel({ inputs, onInputChange }) {
       </div>
 
       {/* Revenue & CAC */}
-      <div className="mb-6 pb-6 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Margins & Acquisition</h3>
+      <div className="mb-6 pb-6 border-b border-gray-100">
+        <h3 className="section-header mb-4">Margins & Acquisition</h3>
         <SliderInput
           label="Gross Margin"
           value={inputs.grossMargin}
@@ -222,7 +222,7 @@ export default function InputPanel({ inputs, onInputChange }) {
 
       {/* Operating Costs */}
       <div className="mb-6">
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Operating Costs (% of Revenue)</h3>
+        <h3 className="section-header mb-4">Operating Costs (% of Revenue)</h3>
         <div className="grid grid-cols-2 gap-4">
           <PercentInput
             label="CC Fees"

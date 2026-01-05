@@ -2,28 +2,32 @@ import { formatCurrency, formatPercent, formatNumber } from '../utils/calculatio
 
 function MetricCard({ label, value, subtext, highlight, warning, success }) {
   let bgColor = 'bg-white';
-  let borderColor = 'border-gray-200';
-  let textColor = 'text-gray-900';
+  let borderColor = 'border-gray-100';
+  let textColor = 'text-brand-800';
+  let subtextColor = 'text-gray-500';
 
   if (success) {
-    bgColor = 'bg-green-50';
-    borderColor = 'border-green-300';
-    textColor = 'text-green-700';
+    bgColor = 'bg-success-50';
+    borderColor = 'border-success-200';
+    textColor = 'text-success-700';
+    subtextColor = 'text-success-600/70';
   } else if (warning) {
-    bgColor = 'bg-yellow-50';
-    borderColor = 'border-yellow-300';
-    textColor = 'text-yellow-700';
+    bgColor = 'bg-warning-50';
+    borderColor = 'border-warning-200';
+    textColor = 'text-warning-700';
+    subtextColor = 'text-warning-600/70';
   } else if (highlight) {
-    bgColor = 'bg-blue-50';
-    borderColor = 'border-blue-300';
-    textColor = 'text-blue-700';
+    bgColor = 'bg-accent-50';
+    borderColor = 'border-accent-200';
+    textColor = 'text-accent-700';
+    subtextColor = 'text-accent-600/70';
   }
 
   return (
-    <div className={`${bgColor} rounded-lg border ${borderColor} p-4`}>
-      <p className="text-sm font-medium text-gray-600">{label}</p>
-      <p className={`text-2xl font-bold ${textColor} mt-1`}>{value}</p>
-      {subtext && <p className="text-xs text-gray-500 mt-1">{subtext}</p>}
+    <div className={`${bgColor} rounded-xl border ${borderColor} p-4 transition-all hover:shadow-md`}>
+      <p className="text-sm font-medium text-gray-500">{label}</p>
+      <p className={`text-2xl font-mono font-bold ${textColor} mt-1 tabular-nums`}>{value}</p>
+      {subtext && <p className={`text-xs ${subtextColor} mt-1`}>{subtext}</p>}
     </div>
   );
 }
@@ -59,12 +63,12 @@ export default function SummaryMetrics({ results }) {
   const endCustomersY3 = yearlySummaries[2]?.endRetained || 0;
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-lg font-bold text-gray-900 mb-6">Key Metrics</h2>
+    <div className="card p-6">
+      <h2 className="text-lg font-bold text-brand-800 mb-6">Key Metrics</h2>
 
       {/* Net Profit Section */}
       <div className="mb-6">
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Net Profit</h3>
+        <h3 className="section-header mb-3">Net Profit</h3>
         <div className="grid grid-cols-3 gap-4">
           <MetricCard
             label="Year 1"
@@ -87,24 +91,38 @@ export default function SummaryMetrics({ results }) {
           />
         </div>
         {!meetsMSC && (
-          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-            <p className="text-sm text-yellow-800">
-              <span className="font-semibold">Below MSC Target:</span> Your projected FY3 net profit of {formatCurrency(netProfitFY3)} is {formatPercent((inputs.minimumSuccessCriteria - netProfitFY3) / inputs.minimumSuccessCriteria)} below your target of {formatCurrency(inputs.minimumSuccessCriteria)}.
-            </p>
+          <div className="mt-4 p-4 bg-warning-50 border-l-4 border-warning-500 rounded-r-lg">
+            <div className="flex">
+              <svg className="h-5 w-5 text-warning-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+              </svg>
+              <div className="ml-3">
+                <p className="text-sm font-semibold text-warning-800">Below MSC Target</p>
+                <p className="text-sm text-warning-700 mt-0.5">
+                  Your projected FY3 net profit of <span className="font-mono font-medium">{formatCurrency(netProfitFY3)}</span> is {formatPercent((inputs.minimumSuccessCriteria - netProfitFY3) / inputs.minimumSuccessCriteria)} below your target of <span className="font-mono font-medium">{formatCurrency(inputs.minimumSuccessCriteria)}</span>.
+                </p>
+              </div>
+            </div>
           </div>
         )}
         {meetsMSC && (
-          <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-md">
-            <p className="text-sm text-green-800">
-              <span className="font-semibold">MSC Target Met!</span> Your projected FY3 net profit exceeds your minimum success criteria.
-            </p>
+          <div className="mt-4 p-4 bg-success-50 border-l-4 border-success-500 rounded-r-lg">
+            <div className="flex">
+              <svg className="h-5 w-5 text-success-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+              </svg>
+              <div className="ml-3">
+                <p className="text-sm font-semibold text-success-800">MSC Target Met!</p>
+                <p className="text-sm text-success-700 mt-0.5">Your projected FY3 net profit exceeds your minimum success criteria.</p>
+              </div>
+            </div>
           </div>
         )}
       </div>
 
       {/* Unit Economics */}
       <div className="mb-6">
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Unit Economics</h3>
+        <h3 className="section-header mb-3">Unit Economics</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <MetricCard
             label="ARPU"
@@ -150,7 +168,7 @@ export default function SummaryMetrics({ results }) {
 
       {/* Growth Metrics */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">Growth</h3>
+        <h3 className="section-header mb-3">Growth</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <MetricCard
             label="Monthly Growth"

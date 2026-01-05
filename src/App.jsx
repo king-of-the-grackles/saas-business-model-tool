@@ -27,18 +27,18 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-surface bg-surface-gradient">
       {/* Header */}
-      <header className="bg-white shadow-sm">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/60 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">SaaS Business Model Stress Test</h1>
-              <p className="text-sm text-gray-600">3-year revenue and profit projections</p>
+              <h1 className="text-2xl font-bold text-brand-800">SaaS Business Model Stress Test</h1>
+              <p className="text-sm text-brand-500">3-year revenue and profit projections</p>
             </div>
             <button
               onClick={resetInputs}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+              className="px-4 py-2 text-sm font-medium text-brand-600 hover:text-brand-800 hover:bg-brand-50 rounded-lg transition-colors"
             >
               Reset to Defaults
             </button>
@@ -62,16 +62,16 @@ export default function App() {
           {/* Main Content Area */}
           <div className="flex-1 min-w-0">
             {/* Tabs */}
-            <div className="bg-white rounded-lg shadow-md mb-6">
-              <nav className="flex border-b border-gray-200">
+            <div className="card mb-6">
+              <nav className="flex border-b border-gray-100">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                    className={`px-6 py-3.5 text-sm font-medium border-b-2 transition-all ${
                       activeTab === tab.id
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        ? 'border-brand-600 text-brand-700 bg-brand-50/50'
+                        : 'border-transparent text-gray-500 hover:text-brand-600 hover:border-brand-200 hover:bg-gray-50/50'
                     }`}
                   >
                     {tab.label}
