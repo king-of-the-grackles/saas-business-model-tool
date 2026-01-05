@@ -9,9 +9,10 @@ export default function Tooltip({ content, children }) {
   useEffect(() => {
     if (isVisible && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
+      // For fixed positioning, use viewport coordinates directly (no scroll offset)
       setPosition({
-        top: rect.top - 8 + window.scrollY,
-        left: rect.left + rect.width / 2 + window.scrollX,
+        top: rect.top - 8,
+        left: rect.left + rect.width / 2,
       });
     }
   }, [isVisible]);
