@@ -8,6 +8,23 @@ import {
   getMonthlyGrowthStatus,
   benchmarkText,
 } from '../utils/benchmarkComparison';
+import Tooltip, { InfoIcon } from './Tooltip';
+
+// Metric explanations for tooltips
+const metricTooltips = {
+  // Unit Economics
+  arpu: 'Average Revenue Per User — the average monthly revenue generated per paying customer across all pricing tiers.',
+  ltv: 'Lifetime Value — total revenue expected from a customer over their entire relationship. Formula: ARPU × Avg Lifespan × Gross Margin.',
+  cac: 'Customer Acquisition Cost — the cost to acquire one paying customer through marketing and sales efforts.',
+  ltvCac: 'Ratio of customer lifetime value to acquisition cost. 3-5x is healthy; below 3x is unsustainable; above 6x suggests under-investment in growth.',
+  cacPayback: 'Months to recover customer acquisition cost from their revenue. Formula: CAC ÷ (ARPU × Gross Margin). Under 12 months is good.',
+  avgLifespan: 'Average Customer Lifespan — how long customers stay before churning. Formula: 1 ÷ Monthly Churn Rate.',
+  // Growth Metrics
+  monthlyGrowth: 'Monthly traffic growth rate — how much your visitor traffic increases each month. 10%+ MoM is strong growth.',
+  cagr: 'Compound Annual Growth Rate — your annualized revenue growth rate accounting for compounding. Shows overall growth trajectory.',
+  conversion: 'Conversion rate — percentage of visitors who become paying customers. Varies by segment: B2B 1-3%, eCommerce 2-4%.',
+  referrals: 'Customer referral rate — percentage of new customers acquired through referrals from existing customers. 15-25% is excellent.',
+};
 
 // Primary metric card - large, prominent (Net Profit)
 function PrimaryMetricCard({ label, value, subtext, warning, success }) {
@@ -41,7 +58,7 @@ function PrimaryMetricCard({ label, value, subtext, warning, success }) {
 }
 
 // Secondary metric card - medium, supporting metrics (Unit Economics)
-function SecondaryMetricCard({ label, value, subtext, highlight, warning, success }) {
+function SecondaryMetricCard({ label, value, subtext, highlight, warning, success, tooltip }) {
   let bgColor = 'bg-white';
   let borderColor = 'border-gray-100';
   let textColor = 'text-brand-800';
@@ -71,7 +88,14 @@ function SecondaryMetricCard({ label, value, subtext, highlight, warning, succes
   return (
     <div className={`${bgColor} rounded-lg border ${borderColor} p-4 transition-all duration-200 hover:shadow-md relative overflow-hidden`}>
       <div className={`absolute top-0 left-0 w-1 h-full ${accentBar}`} />
-      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</p>
+      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-1">
+        {label}
+        {tooltip && (
+          <Tooltip content={tooltip}>
+            <InfoIcon />
+          </Tooltip>
+        )}
+      </p>
       <p className={`text-xl font-mono font-bold ${textColor} mt-1 tabular-nums`}>{value}</p>
       {subtext && <p className={`text-xs ${subtextColor} mt-1`}>{subtext}</p>}
     </div>
@@ -79,7 +103,7 @@ function SecondaryMetricCard({ label, value, subtext, highlight, warning, succes
 }
 
 // Tertiary metric card - compact, supplementary (Growth)
-function TertiaryMetricCard({ label, value, subtext, highlight }) {
+function TertiaryMetricCard({ label, value, subtext, highlight, tooltip }) {
   let textColor = 'text-brand-700';
   let bgHover = 'hover:bg-brand-50/50';
 
@@ -90,7 +114,14 @@ function TertiaryMetricCard({ label, value, subtext, highlight }) {
 
   return (
     <div className={`bg-white/50 rounded-lg border border-gray-100 p-3 transition-all duration-200 ${bgHover}`}>
-      <p className="text-xs font-medium text-gray-500">{label}</p>
+      <p className="text-xs font-medium text-gray-500 flex items-center gap-1">
+        {label}
+        {tooltip && (
+          <Tooltip content={tooltip}>
+            <InfoIcon />
+          </Tooltip>
+        )}
+      </p>
       <p className={`text-lg font-mono font-semibold ${textColor} mt-0.5 tabular-nums`}>{value}</p>
       {subtext && <p className="text-xs text-gray-400 mt-0.5">{subtext}</p>}
     </div>
@@ -192,6 +223,7 @@ export default function SummaryMetrics({ results }) {
             label="ARPU"
             value={formatCurrency(arpu)}
             subtext={`${inputs.pricingTiers?.length || 1} tier${inputs.pricingTiers?.length !== 1 ? 's' : ''}`}
+            tooltip={metricTooltips.arpu}
           />
           <SecondaryMetricCard
             label="LTV"
@@ -200,11 +232,13 @@ export default function SummaryMetrics({ results }) {
             success={grossMarginStatus === 'excellent'}
             highlight={grossMarginStatus === 'good'}
             warning={grossMarginStatus === 'warning'}
+            tooltip={metricTooltips.ltv}
           />
           <SecondaryMetricCard
             label="CAC"
             value={formatCurrency(inputs.estimatedCAC)}
             subtext={benchmarkText.cacPayback}
+            tooltip={metricTooltips.cac}
           />
           <SecondaryMetricCard
             label="LTV:CAC"
@@ -215,6 +249,7 @@ export default function SummaryMetrics({ results }) {
             warning={ltvCacStatus === 'poor' || ltvCacStatus === 'warning'}
             success={ltvCacStatus === 'good'}
             highlight={ltvCacStatus === 'high'}
+            tooltip={metricTooltips.ltvCac}
           />
           <SecondaryMetricCard
             label="CAC Payback"
@@ -225,6 +260,7 @@ export default function SummaryMetrics({ results }) {
             success={cacPaybackStatus === 'excellent'}
             highlight={cacPaybackStatus === 'good'}
             warning={cacPaybackStatus === 'warning' || cacPaybackStatus === 'poor'}
+            tooltip={metricTooltips.cacPayback}
           />
           <SecondaryMetricCard
             label="Avg Lifespan"
@@ -233,6 +269,7 @@ export default function SummaryMetrics({ results }) {
             success={churnStatus === 'excellent'}
             highlight={churnStatus === 'good'}
             warning={churnStatus === 'warning'}
+            tooltip={metricTooltips.avgLifespan}
           />
         </div>
       </div>
@@ -247,17 +284,20 @@ export default function SummaryMetrics({ results }) {
             subtext={growthStatus === 'excellent' ? 'Strong (15%+)' :
                      growthStatus === 'good' ? 'Good (10%+)' : 'Modest'}
             highlight={growthStatus === 'excellent' || growthStatus === 'good'}
+            tooltip={metricTooltips.monthlyGrowth}
           />
           <TertiaryMetricCard
             label="CAGR"
             value={formatPercent(cagr)}
             subtext="Annual compound"
             highlight
+            tooltip={metricTooltips.cagr}
           />
           <TertiaryMetricCard
             label="Conversion"
             value={formatPercent(totalConversionRate)}
             subtext={benchmarkText.conversion}
+            tooltip={metricTooltips.conversion}
           />
           <TertiaryMetricCard
             label="Referrals"
@@ -265,6 +305,7 @@ export default function SummaryMetrics({ results }) {
             subtext={referralStatus === 'excellent' ? 'Great (15%+)' :
                      referralStatus === 'good' ? 'Good (10-15%)' : 'Room to grow'}
             highlight={referralStatus === 'excellent' || referralStatus === 'good'}
+            tooltip={metricTooltips.referrals}
           />
         </div>
       </div>
