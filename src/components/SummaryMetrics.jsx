@@ -1,33 +1,89 @@
 import { formatCurrency, formatPercent, formatNumber } from '../utils/calculations';
 
-function MetricCard({ label, value, subtext, highlight, warning, success }) {
+// Primary metric card - large, prominent (Net Profit)
+function PrimaryMetricCard({ label, value, subtext, warning, success }) {
   let bgColor = 'bg-white';
   let borderColor = 'border-gray-100';
   let textColor = 'text-brand-800';
   let subtextColor = 'text-gray-500';
+  let gradientOverlay = '';
 
   if (success) {
-    bgColor = 'bg-success-50';
+    bgColor = 'bg-gradient-to-br from-success-50 to-success-100/50';
     borderColor = 'border-success-200';
     textColor = 'text-success-700';
     subtextColor = 'text-success-600/70';
+    gradientOverlay = 'before:absolute before:inset-0 before:bg-gradient-to-br before:from-success-500/5 before:to-transparent before:rounded-xl';
   } else if (warning) {
-    bgColor = 'bg-warning-50';
+    bgColor = 'bg-gradient-to-br from-warning-50 to-warning-100/50';
     borderColor = 'border-warning-200';
     textColor = 'text-warning-700';
     subtextColor = 'text-warning-600/70';
-  } else if (highlight) {
-    bgColor = 'bg-accent-50';
-    borderColor = 'border-accent-200';
-    textColor = 'text-accent-700';
-    subtextColor = 'text-accent-600/70';
+    gradientOverlay = 'before:absolute before:inset-0 before:bg-gradient-to-br before:from-warning-500/5 before:to-transparent before:rounded-xl';
   }
 
   return (
-    <div className={`${bgColor} rounded-xl border ${borderColor} p-4 transition-all hover:shadow-md`}>
-      <p className="text-sm font-medium text-gray-500">{label}</p>
-      <p className={`text-2xl font-mono font-bold ${textColor} mt-1 tabular-nums`}>{value}</p>
+    <div className={`relative ${bgColor} rounded-xl border ${borderColor} p-5 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${gradientOverlay}`}>
+      <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">{label}</p>
+      <p className={`text-3xl font-mono font-bold ${textColor} mt-2 tabular-nums`}>{value}</p>
+      {subtext && <p className={`text-sm ${subtextColor} mt-2 font-medium`}>{subtext}</p>}
+    </div>
+  );
+}
+
+// Secondary metric card - medium, supporting metrics (Unit Economics)
+function SecondaryMetricCard({ label, value, subtext, highlight, warning, success }) {
+  let bgColor = 'bg-white';
+  let borderColor = 'border-gray-100';
+  let textColor = 'text-brand-800';
+  let subtextColor = 'text-gray-500';
+  let accentBar = 'bg-brand-200';
+
+  if (success) {
+    bgColor = 'bg-success-50/50';
+    borderColor = 'border-success-100';
+    textColor = 'text-success-700';
+    subtextColor = 'text-success-600/70';
+    accentBar = 'bg-success-400';
+  } else if (warning) {
+    bgColor = 'bg-warning-50/50';
+    borderColor = 'border-warning-100';
+    textColor = 'text-warning-700';
+    subtextColor = 'text-warning-600/70';
+    accentBar = 'bg-warning-400';
+  } else if (highlight) {
+    bgColor = 'bg-accent-50/50';
+    borderColor = 'border-accent-100';
+    textColor = 'text-accent-700';
+    subtextColor = 'text-accent-600/70';
+    accentBar = 'bg-accent-400';
+  }
+
+  return (
+    <div className={`${bgColor} rounded-lg border ${borderColor} p-4 transition-all duration-200 hover:shadow-md relative overflow-hidden`}>
+      <div className={`absolute top-0 left-0 w-1 h-full ${accentBar}`} />
+      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</p>
+      <p className={`text-xl font-mono font-bold ${textColor} mt-1 tabular-nums`}>{value}</p>
       {subtext && <p className={`text-xs ${subtextColor} mt-1`}>{subtext}</p>}
+    </div>
+  );
+}
+
+// Tertiary metric card - compact, supplementary (Growth)
+function TertiaryMetricCard({ label, value, subtext, highlight }) {
+  let textColor = 'text-brand-700';
+  let bgHover = 'hover:bg-brand-50/50';
+
+  if (highlight) {
+    textColor = 'text-accent-700';
+    bgHover = 'hover:bg-accent-50/50';
+  }
+
+  return (
+    <div className={`bg-white/50 rounded-lg border border-gray-100 p-3 transition-all duration-200 ${bgHover}`}>
+      <p className="text-xs font-medium text-gray-500">{label}</p>
+      <p className={`text-lg font-mono font-semibold ${textColor} mt-0.5 tabular-nums`}>{value}</p>
+      {subtext && <p className="text-xs text-gray-400 mt-0.5">{subtext}</p>}
     </div>
   );
 }
@@ -66,23 +122,23 @@ export default function SummaryMetrics({ results }) {
     <div className="card p-6">
       <h2 className="text-lg font-bold text-brand-800 mb-6">Key Metrics</h2>
 
-      {/* Net Profit Section */}
-      <div className="mb-6">
-        <h3 className="section-header mb-3">Net Profit</h3>
-        <div className="grid grid-cols-3 gap-4">
-          <MetricCard
+      {/* Net Profit Section - Primary Tier */}
+      <div className="mb-8">
+        <h3 className="section-header mb-4">Net Profit</h3>
+        <div className="grid grid-cols-3 gap-5">
+          <PrimaryMetricCard
             label="Year 1"
             value={formatCurrency(netProfitFY1, true)}
-            subtext={`${endCustomersY1} customers`}
+            subtext={`${formatNumber(endCustomersY1)} customers`}
             warning={netProfitFY1 < 0}
           />
-          <MetricCard
+          <PrimaryMetricCard
             label="Year 2"
             value={formatCurrency(netProfitFY2, true)}
-            subtext={`${endCustomersY2} customers`}
+            subtext={`${formatNumber(endCustomersY2)} customers`}
             warning={netProfitFY2 < 0}
           />
-          <MetricCard
+          <PrimaryMetricCard
             label="Year 3"
             value={formatCurrency(netProfitFY3, true)}
             subtext={`Target: ${formatCurrency(inputs.minimumSuccessCriteria, true)}`}
@@ -120,74 +176,74 @@ export default function SummaryMetrics({ results }) {
         )}
       </div>
 
-      {/* Unit Economics */}
-      <div className="mb-6">
-        <h3 className="section-header mb-3">Unit Economics</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <MetricCard
+      {/* Unit Economics - Secondary Tier */}
+      <div className="mb-8">
+        <h3 className="section-header mb-4">Unit Economics</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <SecondaryMetricCard
             label="ARPU"
             value={formatCurrency(arpu)}
-            subtext={`${inputs.pricingTiers?.length || 1} pricing tier${inputs.pricingTiers?.length !== 1 ? 's' : ''}`}
+            subtext={`${inputs.pricingTiers?.length || 1} tier${inputs.pricingTiers?.length !== 1 ? 's' : ''}`}
           />
-          <MetricCard
+          <SecondaryMetricCard
             label="LTV"
             value={formatCurrency(ltv)}
-            subtext={`@ ${formatPercent(grossMargin || 0.8)} gross margin`}
+            subtext={`@ ${formatPercent(grossMargin || 0.8)} margin`}
           />
-          <MetricCard
+          <SecondaryMetricCard
             label="CAC"
             value={formatCurrency(inputs.estimatedCAC)}
             subtext="Acquisition Cost"
           />
-          <MetricCard
-            label="LTV:CAC Ratio"
+          <SecondaryMetricCard
+            label="LTV:CAC"
             value={formatNumber(ltvCacRatio, 1) + 'x'}
-            subtext={ltvCacStatus === 'low' ? 'Below 3x minimum' :
-                     ltvCacStatus === 'moderate' ? 'Approaching 3x' :
-                     ltvCacStatus === 'good' ? 'Healthy (3-5x)' : 'Consider more growth spend'}
+            subtext={ltvCacStatus === 'low' ? 'Below 3x min' :
+                     ltvCacStatus === 'moderate' ? 'Near 3x' :
+                     ltvCacStatus === 'good' ? 'Healthy (3-5x)' : 'High - invest more'}
             warning={ltvCacStatus === 'low'}
             success={ltvCacStatus === 'good'}
             highlight={ltvCacStatus === 'high'}
           />
-          <MetricCard
+          <SecondaryMetricCard
             label="CAC Payback"
             value={formatNumber(cacPayback, 1) + ' mo'}
-            subtext={cacPaybackStatus === 'great' ? 'Excellent (<6mo)' :
-                     cacPaybackStatus === 'good' ? 'Good (<12mo)' : 'Needs work (>12mo)'}
+            subtext={cacPaybackStatus === 'great' ? 'Excellent' :
+                     cacPaybackStatus === 'good' ? 'Good' : 'Needs work'}
             success={cacPaybackStatus === 'great'}
             highlight={cacPaybackStatus === 'good'}
             warning={cacPaybackStatus === 'warning'}
           />
-          <MetricCard
-            label="Avg Customer Lifespan"
+          <SecondaryMetricCard
+            label="Avg Lifespan"
             value={formatNumber(acl, 1) + ' mo'}
-            subtext={`${formatPercent(inputs.monthlyChurn)} monthly churn`}
+            subtext={`${formatPercent(inputs.monthlyChurn)} churn`}
           />
         </div>
       </div>
 
-      {/* Growth Metrics */}
+      {/* Growth Metrics - Tertiary Tier */}
       <div>
         <h3 className="section-header mb-3">Growth</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <MetricCard
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <TertiaryMetricCard
             label="Monthly Growth"
             value={formatPercent(inputs.monthlyGrowthRate)}
-            subtext="Traffic growth rate"
+            subtext="Traffic growth"
           />
-          <MetricCard
+          <TertiaryMetricCard
             label="CAGR"
             value={formatPercent(cagr)}
-            subtext="Annual compound rate"
+            subtext="Annual compound"
             highlight
           />
-          <MetricCard
-            label="Total Conversion"
+          <TertiaryMetricCard
+            label="Conversion"
             value={formatPercent(totalConversionRate)}
-            subtext="Traffic to customers"
+            subtext="Traffic → customers"
           />
-          <MetricCard
-            label="Referral Rate"
+          <TertiaryMetricCard
+            label="Referrals"
             value={formatPercent(inputs.customerReferralRate)}
             subtext="Customer referrals"
           />

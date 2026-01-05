@@ -31,14 +31,14 @@ export default function App() {
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200/60 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center animate-fade-in">
             <div>
               <h1 className="text-2xl font-bold text-brand-800">SaaS Business Model Stress Test</h1>
               <p className="text-sm text-brand-500">3-year revenue and profit projections</p>
             </div>
             <button
               onClick={resetInputs}
-              className="px-4 py-2 text-sm font-medium text-brand-600 hover:text-brand-800 hover:bg-brand-50 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium text-brand-600 hover:text-brand-800 hover:bg-brand-50 rounded-lg transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]"
             >
               Reset to Defaults
             </button>
@@ -51,18 +51,22 @@ export default function App() {
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Left Sidebar - Inputs */}
           <div className="lg:w-80 flex-shrink-0 space-y-6">
-            <InputPanel inputs={inputs} onInputChange={updateInput} />
-            <ScenarioManager
-              inputs={inputs}
-              onLoadScenario={loadInputs}
-              onCompare={handleCompare}
-            />
+            <div className="animate-fade-in-up opacity-0 stagger-1">
+              <InputPanel inputs={inputs} onInputChange={updateInput} />
+            </div>
+            <div className="animate-fade-in-up opacity-0 stagger-2">
+              <ScenarioManager
+                inputs={inputs}
+                onLoadScenario={loadInputs}
+                onCompare={handleCompare}
+              />
+            </div>
           </div>
 
           {/* Main Content Area */}
           <div className="flex-1 min-w-0">
             {/* Tabs */}
-            <div className="card mb-6">
+            <div className="card mb-6 animate-fade-in-up opacity-0 stagger-1">
               <nav className="flex border-b border-gray-100">
                 {tabs.map((tab) => (
                   <button
@@ -83,23 +87,31 @@ export default function App() {
             {/* Tab Content */}
             {activeTab === 'dashboard' && (
               <div className="space-y-6">
-                <SummaryMetrics results={results} />
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div className="animate-fade-in-up opacity-0 stagger-2">
+                  <SummaryMetrics results={results} />
+                </div>
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 animate-fade-in-up opacity-0 stagger-3">
                   <ChartsPanel results={results} />
                 </div>
               </div>
             )}
 
             {activeTab === 'charts' && (
-              <ChartsPanel results={results} />
+              <div className="animate-fade-in-up opacity-0 stagger-2">
+                <ChartsPanel results={results} />
+              </div>
             )}
 
             {activeTab === 'data' && (
-              <MonthlyTable results={results} />
+              <div className="animate-fade-in-up opacity-0 stagger-2">
+                <MonthlyTable results={results} />
+              </div>
             )}
 
             {activeTab === 'benchmarks' && (
-              <BenchmarksPanel />
+              <div className="animate-fade-in-up opacity-0 stagger-2">
+                <BenchmarksPanel />
+              </div>
             )}
           </div>
         </div>

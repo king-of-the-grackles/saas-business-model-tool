@@ -1,28 +1,76 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { formatCurrency, formatPercent } from '../utils/calculations';
 import TierManager from './TierManager';
+
+function CollapsibleSection({ title, children, defaultOpen = true }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const contentRef = useRef(null);
+  const [height, setHeight] = useState(defaultOpen ? 'auto' : '0px');
+
+  useEffect(() => {
+    if (contentRef.current) {
+      setHeight(isOpen ? `${contentRef.current.scrollHeight}px` : '0px');
+    }
+  }, [isOpen]);
+
+  return (
+    <div className="mb-6 pb-6 border-b border-gray-100 last:border-b-0 last:mb-0 last:pb-0">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between group mb-4"
+      >
+        <h3 className="section-header group-hover:text-brand-600 transition-colors">{title}</h3>
+        <svg
+          className={`w-5 h-5 text-gray-400 group-hover:text-brand-500 transition-all duration-300 ${isOpen ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div
+        style={{ height, overflow: 'hidden' }}
+        className="transition-all duration-300 ease-in-out"
+      >
+        <div ref={contentRef}>
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function SliderInput({ label, value, onChange, min, max, step, format = 'number', hint }) {
   const displayValue = format === 'percent' ? formatPercent(value) :
                        format === 'currency' ? formatCurrency(value) :
                        value.toLocaleString();
 
+  const percentage = ((value - min) / (max - min)) * 100;
+
   return (
     <div className="mb-4">
-      <div className="flex justify-between items-center mb-1.5">
+      <div className="flex justify-between items-center mb-2">
         <label className="text-sm font-medium text-gray-700">{label}</label>
-        <span className="text-sm font-semibold font-mono text-brand-600">{displayValue}</span>
+        <span className="text-sm font-semibold font-mono text-brand-600 bg-brand-50 px-2 py-0.5 rounded">{displayValue}</span>
       </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full h-2 bg-brand-100 rounded-lg appearance-none cursor-pointer accent-brand-600 hover:accent-brand-700 transition-all"
-      />
-      {hint && <p className="text-xs text-gray-500 mt-1.5">{hint}</p>}
+      <div className="relative">
+        <div className="absolute inset-0 h-2 bg-brand-100 rounded-full top-1/2 -translate-y-1/2" />
+        <div
+          className="absolute h-2 bg-gradient-to-r from-brand-400 to-brand-600 rounded-full top-1/2 -translate-y-1/2 transition-all duration-150"
+          style={{ width: `${percentage}%` }}
+        />
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(parseFloat(e.target.value))}
+          className="relative w-full h-5 appearance-none cursor-pointer bg-transparent z-10 slider-thumb"
+        />
+      </div>
+      {hint && <p className="text-xs text-gray-500 mt-2">{hint}</p>}
     </div>
   );
 }
@@ -113,9 +161,8 @@ export default function InputPanel({ inputs, onInputChange }) {
     <div className="card p-6">
       <h2 className="text-lg font-bold text-brand-800 mb-6">Model Assumptions</h2>
 
-      {/* Target */}
-      <div className="mb-6 pb-6 border-b border-gray-100">
-        <h3 className="section-header mb-4">Target</h3>
+      {/* Target - Always visible */}
+      <CollapsibleSection title="Target" defaultOpen={true}>
         <NumberInput
           label="Minimum Success Criteria (Net Profit FY3)"
           value={inputs.minimumSuccessCriteria}
@@ -126,11 +173,10 @@ export default function InputPanel({ inputs, onInputChange }) {
           prefix="$"
           hint="Your target net profit by end of Year 3"
         />
-      </div>
+      </CollapsibleSection>
 
       {/* Traffic & Growth */}
-      <div className="mb-6 pb-6 border-b border-gray-100">
-        <h3 className="section-header mb-4">Traffic & Growth</h3>
+      <CollapsibleSection title="Traffic & Growth" defaultOpen={true}>
         <NumberInput
           label="Starting Monthly Paid Traffic"
           value={inputs.startingPaidTraffic}
@@ -159,11 +205,10 @@ export default function InputPanel({ inputs, onInputChange }) {
           step={100}
           hint="Additional non-paid traffic"
         />
-      </div>
+      </CollapsibleSection>
 
       {/* Retention */}
-      <div className="mb-6 pb-6 border-b border-gray-100">
-        <h3 className="section-header mb-4">Retention</h3>
+      <CollapsibleSection title="Retention" defaultOpen={true}>
         <SliderInput
           label="Customer Referral Rate"
           value={inputs.customerReferralRate}
@@ -184,20 +229,18 @@ export default function InputPanel({ inputs, onInputChange }) {
           format="percent"
           hint="2.5% to 5% is great (use 100% for one-time purchases)"
         />
-      </div>
+      </CollapsibleSection>
 
       {/* Pricing Tiers */}
-      <div className="mb-6 pb-6 border-b border-gray-100">
-        <h3 className="section-header mb-4">Pricing & Conversion</h3>
+      <CollapsibleSection title="Pricing & Conversion" defaultOpen={true}>
         <TierManager
           tiers={inputs.pricingTiers}
           onTiersChange={(newTiers) => onInputChange('pricingTiers', newTiers)}
         />
-      </div>
+      </CollapsibleSection>
 
       {/* Revenue & CAC */}
-      <div className="mb-6 pb-6 border-b border-gray-100">
-        <h3 className="section-header mb-4">Margins & Acquisition</h3>
+      <CollapsibleSection title="Margins & Acquisition" defaultOpen={true}>
         <SliderInput
           label="Gross Margin"
           value={inputs.grossMargin}
@@ -218,11 +261,10 @@ export default function InputPanel({ inputs, onInputChange }) {
           prefix="$"
           hint="Cost to acquire each paying customer"
         />
-      </div>
+      </CollapsibleSection>
 
-      {/* Operating Costs */}
-      <div className="mb-6">
-        <h3 className="section-header mb-4">Operating Costs (% of Revenue)</h3>
+      {/* Operating Costs - Collapsed by default */}
+      <CollapsibleSection title="Operating Costs (% of Revenue)" defaultOpen={false}>
         <div className="grid grid-cols-2 gap-4">
           <PercentInput
             label="CC Fees"
@@ -272,7 +314,7 @@ export default function InputPanel({ inputs, onInputChange }) {
             prefix="$"
           />
         </div>
-      </div>
+      </CollapsibleSection>
     </div>
   );
 }
