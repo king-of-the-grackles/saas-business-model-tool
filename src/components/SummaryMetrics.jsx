@@ -1,4 +1,13 @@
 import { formatCurrency, formatPercent, formatNumber } from '../utils/calculations';
+import {
+  getLtvCacStatus,
+  getCacPaybackStatus,
+  getGrossMarginStatus,
+  getMonthlyChurnStatus,
+  getReferralRateStatus,
+  getMonthlyGrowthStatus,
+  benchmarkText,
+} from '../utils/benchmarkComparison';
 
 // Primary metric card - large, prominent (Net Profit)
 function PrimaryMetricCard({ label, value, subtext, warning, success }) {
@@ -105,14 +114,13 @@ export default function SummaryMetrics({ results }) {
     meetsMSC,
   } = summaryMetrics;
 
-  const ltvCacPercent = ltvCacRatio * 100;
-  const ltvCacStatus = ltvCacPercent < 200 ? 'low' :
-                       ltvCacPercent < 300 ? 'moderate' :
-                       ltvCacPercent <= 500 ? 'good' : 'high';
-
-  // CAC Payback status: <6 months = great, <12 months = good, >12 months = warning
-  const cacPaybackStatus = cacPayback <= 6 ? 'great' :
-                           cacPayback <= 12 ? 'good' : 'warning';
+  // Use centralized benchmark status functions
+  const ltvCacStatus = getLtvCacStatus(ltvCacRatio);
+  const cacPaybackStatus = getCacPaybackStatus(cacPayback);
+  const grossMarginStatus = getGrossMarginStatus(grossMargin);
+  const churnStatus = getMonthlyChurnStatus(inputs.monthlyChurn);
+  const referralStatus = getReferralRateStatus(inputs.customerReferralRate);
+  const growthStatus = getMonthlyGrowthStatus(inputs.monthlyGrowthRate);
 
   const endCustomersY1 = yearlySummaries[0]?.endRetained || 0;
   const endCustomersY2 = yearlySummaries[1]?.endRetained || 0;
@@ -189,35 +197,42 @@ export default function SummaryMetrics({ results }) {
             label="LTV"
             value={formatCurrency(ltv)}
             subtext={`@ ${formatPercent(grossMargin || 0.8)} margin`}
+            success={grossMarginStatus === 'excellent'}
+            highlight={grossMarginStatus === 'good'}
+            warning={grossMarginStatus === 'warning'}
           />
           <SecondaryMetricCard
             label="CAC"
             value={formatCurrency(inputs.estimatedCAC)}
-            subtext="Acquisition Cost"
+            subtext={benchmarkText.cacPayback}
           />
           <SecondaryMetricCard
             label="LTV:CAC"
             value={formatNumber(ltvCacRatio, 1) + 'x'}
-            subtext={ltvCacStatus === 'low' ? 'Below 3x min' :
-                     ltvCacStatus === 'moderate' ? 'Near 3x' :
+            subtext={ltvCacStatus === 'poor' ? 'Below 3x min' :
+                     ltvCacStatus === 'warning' ? 'Near 3x median' :
                      ltvCacStatus === 'good' ? 'Healthy (3-5x)' : 'High - invest more'}
-            warning={ltvCacStatus === 'low'}
+            warning={ltvCacStatus === 'poor' || ltvCacStatus === 'warning'}
             success={ltvCacStatus === 'good'}
             highlight={ltvCacStatus === 'high'}
           />
           <SecondaryMetricCard
             label="CAC Payback"
             value={formatNumber(cacPayback, 1) + ' mo'}
-            subtext={cacPaybackStatus === 'great' ? 'Excellent' :
-                     cacPaybackStatus === 'good' ? 'Good' : 'Needs work'}
-            success={cacPaybackStatus === 'great'}
+            subtext={cacPaybackStatus === 'excellent' ? 'Excellent (<6mo)' :
+                     cacPaybackStatus === 'good' ? 'Good (6-12mo)' :
+                     cacPaybackStatus === 'warning' ? 'Acceptable (12-18mo)' : 'Concerning (>18mo)'}
+            success={cacPaybackStatus === 'excellent'}
             highlight={cacPaybackStatus === 'good'}
-            warning={cacPaybackStatus === 'warning'}
+            warning={cacPaybackStatus === 'warning' || cacPaybackStatus === 'poor'}
           />
           <SecondaryMetricCard
             label="Avg Lifespan"
             value={formatNumber(acl, 1) + ' mo'}
-            subtext={`${formatPercent(inputs.monthlyChurn)} churn`}
+            subtext={`Churn: ${formatPercent(inputs.monthlyChurn)} ${churnStatus === 'excellent' ? '(great)' : churnStatus === 'good' ? '(ok)' : '(high)'}`}
+            success={churnStatus === 'excellent'}
+            highlight={churnStatus === 'good'}
+            warning={churnStatus === 'warning'}
           />
         </div>
       </div>
@@ -229,7 +244,9 @@ export default function SummaryMetrics({ results }) {
           <TertiaryMetricCard
             label="Monthly Growth"
             value={formatPercent(inputs.monthlyGrowthRate)}
-            subtext="Traffic growth"
+            subtext={growthStatus === 'excellent' ? 'Strong (15%+)' :
+                     growthStatus === 'good' ? 'Good (10%+)' : 'Modest'}
+            highlight={growthStatus === 'excellent' || growthStatus === 'good'}
           />
           <TertiaryMetricCard
             label="CAGR"
@@ -240,12 +257,14 @@ export default function SummaryMetrics({ results }) {
           <TertiaryMetricCard
             label="Conversion"
             value={formatPercent(totalConversionRate)}
-            subtext="Traffic → customers"
+            subtext={benchmarkText.conversion}
           />
           <TertiaryMetricCard
             label="Referrals"
             value={formatPercent(inputs.customerReferralRate)}
-            subtext="Customer referrals"
+            subtext={referralStatus === 'excellent' ? 'Great (15%+)' :
+                     referralStatus === 'good' ? 'Good (10-15%)' : 'Room to grow'}
+            highlight={referralStatus === 'excellent' || referralStatus === 'good'}
           />
         </div>
       </div>

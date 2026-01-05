@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { formatCurrency, formatPercent } from '../utils/calculations';
+import { inputTooltips } from '../utils/benchmarkComparison';
+import Tooltip, { InfoIcon } from './Tooltip';
 import TierManager from './TierManager';
 
 function CollapsibleSection({ title, children, defaultOpen = true }) {
@@ -41,7 +43,7 @@ function CollapsibleSection({ title, children, defaultOpen = true }) {
   );
 }
 
-function SliderInput({ label, value, onChange, min, max, step, format = 'number', hint }) {
+function SliderInput({ label, value, onChange, min, max, step, format = 'number', hint, tooltip }) {
   const displayValue = format === 'percent' ? formatPercent(value) :
                        format === 'currency' ? formatCurrency(value) :
                        value.toLocaleString();
@@ -51,13 +53,20 @@ function SliderInput({ label, value, onChange, min, max, step, format = 'number'
   return (
     <div className="mb-4">
       <div className="flex justify-between items-center mb-2">
-        <label className="text-sm font-medium text-gray-700">{label}</label>
+        <label className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+          {label}
+          {tooltip && (
+            <Tooltip content={tooltip}>
+              <InfoIcon />
+            </Tooltip>
+          )}
+        </label>
         <span className="text-sm font-semibold font-mono text-brand-600 bg-brand-50 px-2 py-0.5 rounded">{displayValue}</span>
       </div>
-      <div className="relative">
-        <div className="absolute inset-0 h-2 bg-brand-100 rounded-full top-1/2 -translate-y-1/2" />
+      <div className="relative h-5 flex items-center">
+        <div className="absolute left-0 right-0 h-2 bg-brand-100 rounded-full" />
         <div
-          className="absolute h-2 bg-gradient-to-r from-brand-400 to-brand-600 rounded-full top-1/2 -translate-y-1/2 transition-all duration-150"
+          className="absolute left-0 h-2 bg-gradient-to-r from-brand-400 to-brand-600 rounded-full transition-all duration-150"
           style={{ width: `${percentage}%` }}
         />
         <input
@@ -67,7 +76,7 @@ function SliderInput({ label, value, onChange, min, max, step, format = 'number'
           step={step}
           value={value}
           onChange={(e) => onChange(parseFloat(e.target.value))}
-          className="relative w-full h-5 appearance-none cursor-pointer bg-transparent z-10 slider-thumb"
+          className="absolute inset-0 w-full appearance-none cursor-pointer bg-transparent z-10 slider-thumb"
         />
       </div>
       {hint && <p className="text-xs text-gray-500 mt-2">{hint}</p>}
@@ -75,7 +84,7 @@ function SliderInput({ label, value, onChange, min, max, step, format = 'number'
   );
 }
 
-function NumberInput({ label, value, onChange, min, max, step, prefix = '', suffix = '', hint }) {
+function NumberInput({ label, value, onChange, min, max, step, prefix = '', suffix = '', hint, tooltip }) {
   const [localValue, setLocalValue] = useState(value.toString());
 
   useEffect(() => {
@@ -94,7 +103,14 @@ function NumberInput({ label, value, onChange, min, max, step, prefix = '', suff
 
   return (
     <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+        {label}
+        {tooltip && (
+          <Tooltip content={tooltip}>
+            <InfoIcon />
+          </Tooltip>
+        )}
+      </label>
       <div className="relative">
         {prefix && (
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">{prefix}</span>
@@ -195,6 +211,7 @@ export default function InputPanel({ inputs, onInputChange }) {
           step={0.005}
           format="percent"
           hint="How much traffic grows each month"
+          tooltip={inputTooltips.monthlyGrowthRate}
         />
         <NumberInput
           label="Organic Traffic (Monthly)"
@@ -218,6 +235,7 @@ export default function InputPanel({ inputs, onInputChange }) {
           step={0.01}
           format="percent"
           hint="15% to 25% is great"
+          tooltip={inputTooltips.customerReferralRate}
         />
         <SliderInput
           label="Monthly Churn Rate"
@@ -228,6 +246,7 @@ export default function InputPanel({ inputs, onInputChange }) {
           step={0.005}
           format="percent"
           hint="2.5% to 5% is great (use 100% for one-time purchases)"
+          tooltip={inputTooltips.monthlyChurn}
         />
       </CollapsibleSection>
 
@@ -250,6 +269,7 @@ export default function InputPanel({ inputs, onInputChange }) {
           step={0.01}
           format="percent"
           hint="SaaS benchmark: 75%+ (Craft Ventures)"
+          tooltip={inputTooltips.grossMargin}
         />
         <NumberInput
           label="Customer Acquisition Cost (CAC)"
@@ -260,6 +280,7 @@ export default function InputPanel({ inputs, onInputChange }) {
           step={1}
           prefix="$"
           hint="Cost to acquire each paying customer"
+          tooltip={inputTooltips.estimatedCAC}
         />
       </CollapsibleSection>
 
