@@ -64,7 +64,7 @@ function TierRow({ tier, onUpdate, onDelete, canDelete }) {
   };
 
   return (
-    <div className="p-3 bg-gray-50 rounded-lg">
+    <div className="p-3 bg-brand-50/50 border border-brand-100 rounded-lg">
       <div className="flex items-center justify-between mb-2">
         {isEditingName ? (
           <input
@@ -74,15 +74,15 @@ function TierRow({ tier, onUpdate, onDelete, canDelete }) {
             onChange={(e) => setEditName(e.target.value)}
             onBlur={handleNameSave}
             onKeyDown={handleNameKeyDown}
-            className="px-2 py-1 text-sm font-semibold border border-blue-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-2 py-1 text-sm font-semibold border border-brand-400 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500/20"
           />
         ) : (
           <button
             onClick={handleNameClick}
-            className="flex items-center gap-1.5 text-sm font-semibold text-gray-800 hover:text-blue-600 group"
+            className="flex items-center gap-1.5 text-sm font-semibold text-brand-800 hover:text-brand-600 group"
           >
             {tier.name}
-            <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3.5 h-3.5 text-brand-300 group-hover:text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
             </svg>
           </button>
@@ -90,9 +90,9 @@ function TierRow({ tier, onUpdate, onDelete, canDelete }) {
         <button
           onClick={onDelete}
           disabled={!canDelete}
-          className={`p-1 rounded ${
+          className={`p-1 rounded-md transition-colors ${
             canDelete
-              ? 'text-red-500 hover:bg-red-50'
+              ? 'text-danger-500 hover:bg-danger-50'
               : 'text-gray-300 cursor-not-allowed'
           }`}
           title={canDelete ? 'Remove tier' : 'Cannot remove last tier'}
@@ -104,31 +104,31 @@ function TierRow({ tier, onUpdate, onDelete, canDelete }) {
       </div>
       <div className="flex flex-col gap-2">
         <div className="flex items-center gap-1">
-          <span className="text-gray-500 text-sm">$</span>
+          <span className="text-gray-400 text-sm font-medium">$</span>
           <input
             type="number"
             value={priceValue}
             onChange={handlePriceChange}
             onBlur={handlePriceBlur}
-            className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-20 px-2 py-1.5 text-sm font-mono border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
             min="0"
             step="1"
           />
-          <span className="text-gray-500 text-sm">/mo</span>
+          <span className="text-gray-400 text-sm">/mo</span>
         </div>
         <div className="flex items-center gap-1">
-          <span className="text-gray-500 text-sm">%</span>
+          <span className="text-gray-400 text-sm font-medium">%</span>
           <input
             type="number"
             value={conversionValue}
             onChange={handleConversionChange}
             onBlur={handleConversionBlur}
-            className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-20 px-2 py-1.5 text-sm font-mono border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
             min="0"
             max="100"
             step="0.01"
           />
-          <span className="text-gray-500 text-sm">conversion</span>
+          <span className="text-gray-400 text-sm">conversion</span>
         </div>
       </div>
     </div>
@@ -164,7 +164,7 @@ export default function TierManager({ tiers, onTiersChange }) {
         <label className="text-sm font-medium text-gray-700">Pricing Tiers</label>
         <button
           onClick={handleAddTier}
-          className="flex items-center gap-1 px-2 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded"
+          className="flex items-center gap-1 px-2.5 py-1.5 text-sm font-medium text-brand-600 hover:bg-brand-50 rounded-md transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -185,14 +185,14 @@ export default function TierManager({ tiers, onTiersChange }) {
         ))}
       </div>
 
-      <div className="flex justify-between text-sm pt-2 border-t border-gray-200">
+      <div className="flex justify-between text-sm pt-3 border-t border-gray-100">
         <div>
           <span className="text-gray-500">Total Conversion: </span>
-          <span className="font-medium text-gray-900">{formatPercent(totalConversionRate)}</span>
+          <span className="font-mono font-medium text-brand-700">{formatPercent(totalConversionRate)}</span>
         </div>
         <div>
           <span className="text-gray-500">ARPU: </span>
-          <span className="font-medium text-gray-900">{formatCurrency(arpu)}</span>
+          <span className="font-mono font-medium text-brand-700">{formatCurrency(arpu)}</span>
         </div>
       </div>
     </div>

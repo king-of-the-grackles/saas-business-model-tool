@@ -15,13 +15,28 @@ import {
 } from 'recharts';
 import { formatCurrency, formatNumber, calculateARPU, getTotalConversionRate } from '../utils/calculations';
 
+// Brand-aligned color palette
+const chartColors = {
+  primary: '#486581',      // brand-600
+  secondary: '#0d9488',    // accent-600
+  tertiary: '#627d98',     // brand-500
+  success: '#10b981',      // success-500
+  warning: '#f59e0b',      // warning-500
+  danger: '#ef4444',       // danger-500
+  purple: '#8b5cf6',
+  cyan: '#06b6d4',
+};
+
 // Color palette for pricing tiers
-const tierColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
+const tierColors = ['#486581', '#0d9488', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6'];
 
 function ChartCard({ title, children }) {
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h3 className="text-md font-semibold text-gray-800 mb-4">{title}</h3>
+    <div className="card p-6 card-hover">
+      <h3 className="text-sm font-semibold text-brand-800 mb-5 flex items-center gap-2">
+        <span className="w-1 h-4 bg-gradient-to-b from-brand-500 to-brand-600 rounded-full" />
+        {title}
+      </h3>
       {children}
     </div>
   );
@@ -30,20 +45,48 @@ function ChartCard({ title, children }) {
 function CustomTooltip({ active, payload, label }) {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-3">
-        <p className="font-semibold text-gray-800">{label}</p>
-        {payload.map((entry, index) => (
-          <p key={index} style={{ color: entry.color }} className="text-sm">
-            {entry.name}: {typeof entry.value === 'number' ?
-              (entry.dataKey.includes('Revenue') || entry.dataKey.includes('Profit') || entry.dataKey.includes('Cost') ?
-                formatCurrency(entry.value) : formatNumber(entry.value)) :
-              entry.value}
-          </p>
-        ))}
+      <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl shadow-xl p-4">
+        <p className="font-semibold text-brand-800 text-sm mb-2 pb-2 border-b border-gray-100">{label}</p>
+        <div className="space-y-1.5">
+          {payload.map((entry, index) => (
+            <div key={index} className="flex items-center justify-between gap-6">
+              <span className="flex items-center gap-2 text-sm text-gray-600">
+                <span
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ backgroundColor: entry.color }}
+                />
+                {entry.name}
+              </span>
+              <span className="font-mono font-medium text-sm" style={{ color: entry.color }}>
+                {typeof entry.value === 'number' ?
+                  (entry.dataKey.includes('Revenue') || entry.dataKey.includes('Profit') || entry.dataKey.includes('Cost') || entry.dataKey.includes('revenue') || entry.dataKey.includes('profit') || entry.dataKey.includes('costs') || entry.dataKey.includes('tier_') ?
+                    formatCurrency(entry.value) : formatNumber(entry.value)) :
+                  entry.value}
+              </span>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
   return null;
+}
+
+// Custom legend component
+function CustomLegend({ payload }) {
+  return (
+    <div className="flex flex-wrap justify-center gap-4 mt-4 pt-3 border-t border-gray-100">
+      {payload.map((entry, index) => (
+        <div key={index} className="flex items-center gap-2 text-xs text-gray-600">
+          <span
+            className="w-3 h-3 rounded-sm"
+            style={{ backgroundColor: entry.color }}
+          />
+          <span>{entry.value}</span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export default function ChartsPanel({ results }) {
@@ -104,30 +147,46 @@ export default function ChartsPanel({ results }) {
       <ChartCard title="Customer Growth Over Time">
         <ResponsiveContainer width="100%" height={300}>
           <AreaChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
+            <defs>
+              <linearGradient id="customerGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={chartColors.primary} stopOpacity={0.4}/>
+                <stop offset="95%" stopColor={chartColors.primary} stopOpacity={0.05}/>
+              </linearGradient>
+              <linearGradient id="newCustomerGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={chartColors.secondary} stopOpacity={0.4}/>
+                <stop offset="95%" stopColor={chartColors.secondary} stopOpacity={0.05}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 11, fill: '#6b7280' }}
+              tickLine={false}
+              axisLine={{ stroke: '#e5e7eb' }}
               interval={5}
             />
-            <YAxis tick={{ fontSize: 12 }} />
+            <YAxis
+              tick={{ fontSize: 11, fill: '#6b7280' }}
+              tickLine={false}
+              axisLine={false}
+            />
             <Tooltip content={<CustomTooltip />} />
-            <Legend />
+            <Legend content={<CustomLegend />} />
             <Area
               type="monotone"
               dataKey="customers"
               name="Total Customers"
-              stroke="#2563eb"
-              fill="#3b82f6"
-              fillOpacity={0.6}
+              stroke={chartColors.primary}
+              strokeWidth={2}
+              fill="url(#customerGradient)"
             />
             <Area
               type="monotone"
               dataKey="newCustomers"
               name="New This Month"
-              stroke="#10b981"
-              fill="#34d399"
-              fillOpacity={0.4}
+              stroke={chartColors.secondary}
+              strokeWidth={2}
+              fill="url(#newCustomerGradient)"
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -137,38 +196,50 @@ export default function ChartsPanel({ results }) {
       <ChartCard title="Customer Acquisition Funnel">
         <ResponsiveContainer width="100%" height={300}>
           <AreaChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
+            <defs>
+              <linearGradient id="trafficGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={chartColors.tertiary} stopOpacity={0.3}/>
+                <stop offset="95%" stopColor={chartColors.tertiary} stopOpacity={0.05}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 11, fill: '#6b7280' }}
+              tickLine={false}
+              axisLine={{ stroke: '#e5e7eb' }}
               interval={5}
             />
-            <YAxis tick={{ fontSize: 12 }} />
+            <YAxis
+              tick={{ fontSize: 11, fill: '#6b7280' }}
+              tickLine={false}
+              axisLine={false}
+            />
             <Tooltip content={<CustomTooltip />} />
-            <Legend />
+            <Legend content={<CustomLegend />} />
             <Area
               type="monotone"
               dataKey="traffic"
               name="Total Traffic"
-              stroke="#6366f1"
-              fill="#818cf8"
-              fillOpacity={0.6}
+              stroke={chartColors.tertiary}
+              strokeWidth={2}
+              fill="url(#trafficGradient)"
             />
             <Area
               type="monotone"
               dataKey="newCustomers"
               name="New Customers"
-              stroke="#10b981"
-              fill="#34d399"
-              fillOpacity={0.6}
+              stroke={chartColors.secondary}
+              strokeWidth={2}
+              fill="url(#newCustomerGradient)"
             />
             <Area
               type="monotone"
               dataKey="customers"
               name="Total Retained"
-              stroke="#3b82f6"
-              fill="#60a5fa"
-              fillOpacity={0.6}
+              stroke={chartColors.primary}
+              strokeWidth={2}
+              fill="url(#customerGradient)"
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -178,42 +249,46 @@ export default function ChartsPanel({ results }) {
       <ChartCard title="Revenue & Profit Trends">
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 11, fill: '#6b7280' }}
+              tickLine={false}
+              axisLine={{ stroke: '#e5e7eb' }}
               interval={5}
             />
             <YAxis
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 11, fill: '#6b7280' }}
+              tickLine={false}
+              axisLine={false}
               tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Legend />
-            <ReferenceLine y={0} stroke="#9ca3af" strokeDasharray="3 3" />
+            <Legend content={<CustomLegend />} />
+            <ReferenceLine y={0} stroke="#d1d5db" strokeDasharray="3 3" />
             <Line
               type="monotone"
               dataKey="revenue"
               name="Monthly Revenue"
-              stroke="#2563eb"
-              strokeWidth={2}
+              stroke={chartColors.primary}
+              strokeWidth={2.5}
               dot={false}
             />
             <Line
               type="monotone"
               dataKey="netProfit"
               name="Monthly Profit"
-              stroke="#10b981"
-              strokeWidth={2}
+              stroke={chartColors.success}
+              strokeWidth={2.5}
               dot={false}
             />
             <Line
               type="monotone"
               dataKey="cumulativeProfit"
               name="Cumulative Profit"
-              stroke="#8b5cf6"
+              stroke={chartColors.purple}
               strokeWidth={2}
-              strokeDasharray="5 5"
+              strokeDasharray="6 4"
               dot={false}
             />
           </LineChart>
@@ -225,18 +300,22 @@ export default function ChartsPanel({ results }) {
         <ChartCard title="Revenue by Pricing Tier">
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
               <XAxis
                 dataKey="name"
-                tick={{ fontSize: 10 }}
+                tick={{ fontSize: 11, fill: '#6b7280' }}
+                tickLine={false}
+                axisLine={{ stroke: '#e5e7eb' }}
                 interval={5}
               />
               <YAxis
-                tick={{ fontSize: 12 }}
+                tick={{ fontSize: 11, fill: '#6b7280' }}
+                tickLine={false}
+                axisLine={false}
                 tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`}
               />
               <Tooltip content={<CustomTooltip />} />
-              <Legend />
+              <Legend content={<CustomLegend />} />
               {tiers.map((tier, index) => (
                 <Area
                   key={tier.id}
@@ -256,59 +335,91 @@ export default function ChartsPanel({ results }) {
 
       {/* Yearly Summary Bar Chart */}
       <ChartCard title="Annual Revenue vs Costs">
-        <ResponsiveContainer width="100%" height={250}>
-          <BarChart data={yearlyData}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} />
+        <ResponsiveContainer width="100%" height={280}>
+          <BarChart data={yearlyData} barGap={4}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+            <XAxis
+              dataKey="name"
+              tick={{ fontSize: 12, fill: '#6b7280', fontWeight: 500 }}
+              tickLine={false}
+              axisLine={{ stroke: '#e5e7eb' }}
+            />
+            <YAxis
+              tick={{ fontSize: 11, fill: '#6b7280' }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`}
+            />
             <Tooltip content={<CustomTooltip />} />
-            <Legend />
-            <Bar dataKey="revenue" name="Revenue" fill="#3b82f6" />
-            <Bar dataKey="costs" name="Costs" fill="#f87171" />
-            <Bar dataKey="profit" name="Profit" fill="#10b981" />
+            <Legend content={<CustomLegend />} />
+            <Bar dataKey="revenue" name="Revenue" fill={chartColors.primary} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="costs" name="Costs" fill={chartColors.danger} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="profit" name="Profit" fill={chartColors.success} radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
 
       {/* Cost Breakdown */}
       <ChartCard title="Cost Breakdown Over Time">
-        <ResponsiveContainer width="100%" height={250}>
+        <ResponsiveContainer width="100%" height={280}>
           <AreaChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
+            <defs>
+              <linearGradient id="cacGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={chartColors.warning} stopOpacity={0.8}/>
+                <stop offset="95%" stopColor={chartColors.warning} stopOpacity={0.3}/>
+              </linearGradient>
+              <linearGradient id="staffingGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={chartColors.purple} stopOpacity={0.8}/>
+                <stop offset="95%" stopColor={chartColors.purple} stopOpacity={0.3}/>
+              </linearGradient>
+              <linearGradient id="ccGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={chartColors.cyan} stopOpacity={0.8}/>
+                <stop offset="95%" stopColor={chartColors.cyan} stopOpacity={0.3}/>
+              </linearGradient>
+              <linearGradient id="otherGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#9ca3af" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="#9ca3af" stopOpacity={0.3}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 10 }}
+              tick={{ fontSize: 11, fill: '#6b7280' }}
+              tickLine={false}
+              axisLine={{ stroke: '#e5e7eb' }}
               interval={5}
             />
             <YAxis
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 11, fill: '#6b7280' }}
+              tickLine={false}
+              axisLine={false}
               tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Legend />
+            <Legend content={<CustomLegend />} />
             <Area
               type="monotone"
               dataKey="cac"
               name="CAC"
               stackId="1"
-              stroke="#f97316"
-              fill="#fb923c"
+              stroke={chartColors.warning}
+              fill="url(#cacGradient)"
             />
             <Area
               type="monotone"
               dataKey="staffing"
               name="Staffing"
               stackId="1"
-              stroke="#8b5cf6"
-              fill="#a78bfa"
+              stroke={chartColors.purple}
+              fill="url(#staffingGradient)"
             />
             <Area
               type="monotone"
               dataKey="ccFees"
               name="CC Fees"
               stackId="1"
-              stroke="#06b6d4"
-              fill="#22d3ee"
+              stroke={chartColors.cyan}
+              fill="url(#ccGradient)"
             />
             <Area
               type="monotone"
@@ -316,7 +427,7 @@ export default function ChartsPanel({ results }) {
               name="Other"
               stackId="1"
               stroke="#6b7280"
-              fill="#9ca3af"
+              fill="url(#otherGradient)"
             />
           </AreaChart>
         </ResponsiveContainer>

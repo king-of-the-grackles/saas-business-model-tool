@@ -52,21 +52,29 @@ export default function ScenarioManager({ inputs, onLoadScenario, onCompare }) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="card p-6">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-bold text-gray-900">Scenarios</h2>
+        <h2 className="text-lg font-bold text-brand-800">Scenarios</h2>
         <button
           onClick={() => setShowSaveModal(true)}
-          className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700"
+          className="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors"
         >
           Save Current
         </button>
       </div>
 
       {scenarios.length === 0 ? (
-        <p className="text-sm text-gray-500 text-center py-4">
-          No saved scenarios. Save your current assumptions to compare later.
-        </p>
+        <div className="text-center py-6">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-brand-50 flex items-center justify-center">
+            <svg className="w-7 h-7 text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            </svg>
+          </div>
+          <p className="text-sm font-medium text-gray-700">No saved scenarios</p>
+          <p className="text-xs text-gray-500 mt-1 max-w-[200px] mx-auto">
+            Save your current assumptions to compare different business models
+          </p>
+        </div>
       ) : (
         <>
           <div className="space-y-2 mb-4">
@@ -77,7 +85,7 @@ export default function ScenarioManager({ inputs, onLoadScenario, onCompare }) {
               return (
                 <div
                   key={scenario.id}
-                  className={`p-3 border rounded-lg ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'}`}
+                  className={`p-3 border rounded-lg transition-all ${isSelected ? 'border-brand-400 bg-brand-50' : 'border-gray-100 hover:border-gray-200'}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -85,28 +93,28 @@ export default function ScenarioManager({ inputs, onLoadScenario, onCompare }) {
                         type="checkbox"
                         checked={!!isSelected}
                         onChange={() => toggleCompareSelection(scenario)}
-                        className="w-4 h-4 text-blue-600 rounded"
+                        className="w-4 h-4 text-brand-600 rounded border-gray-300 focus:ring-brand-500"
                       />
                       <div>
-                        <p className="font-medium text-gray-900">{scenario.name}</p>
+                        <p className="font-medium text-brand-800">{scenario.name}</p>
                         <p className="text-xs text-gray-500">
-                          FY3 Profit: {formatCurrency(results.summaryMetrics.netProfitFY3, true)}
+                          FY3 Profit: <span className="font-mono">{formatCurrency(results.summaryMetrics.netProfitFY3, true)}</span>
                           {results.summaryMetrics.meetsMSC && (
-                            <span className="ml-2 text-green-600">✓ Meets MSC</span>
+                            <span className="ml-2 text-success-600 font-medium">✓ Meets MSC</span>
                           )}
                         </p>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-1">
                       <button
                         onClick={() => handleLoad(scenario)}
-                        className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800"
+                        className="px-3 py-1 text-sm font-medium text-brand-600 hover:text-brand-800 hover:bg-brand-50 rounded-md transition-colors"
                       >
                         Load
                       </button>
                       <button
                         onClick={() => handleDelete(scenario.id)}
-                        className="px-3 py-1 text-sm text-red-600 hover:text-red-800"
+                        className="px-3 py-1 text-sm font-medium text-danger-500 hover:text-danger-700 hover:bg-danger-50 rounded-md transition-colors"
                       >
                         Delete
                       </button>
@@ -120,7 +128,7 @@ export default function ScenarioManager({ inputs, onLoadScenario, onCompare }) {
           {selectedForCompare.length >= 2 && (
             <button
               onClick={handleCompare}
-              className="w-full py-2 bg-green-600 text-white font-medium rounded-md hover:bg-green-700"
+              className="w-full py-2.5 bg-accent-600 text-white font-medium rounded-lg hover:bg-accent-700 transition-colors"
             >
               Compare {selectedForCompare.length} Scenarios
             </button>
@@ -135,28 +143,28 @@ export default function ScenarioManager({ inputs, onLoadScenario, onCompare }) {
 
       {/* Save Modal */}
       {showSaveModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Save Scenario</h3>
+        <div className="fixed inset-0 bg-brand-900/60 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-bold text-brand-800 mb-4">Save Scenario</h3>
             <input
               type="text"
               value={scenarioName}
               onChange={(e) => setScenarioName(e.target.value)}
               placeholder="Scenario name (e.g., Aggressive Growth)"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-4"
+              className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 mb-4 transition-colors"
               autoFocus
             />
             <div className="flex gap-3">
               <button
                 onClick={() => setShowSaveModal(false)}
-                className="flex-1 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                className="flex-1 py-2.5 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 font-medium transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
                 disabled={!scenarioName.trim()}
-                className="flex-1 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 py-2.5 bg-brand-600 text-white rounded-lg hover:bg-brand-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Save
               </button>

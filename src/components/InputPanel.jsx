@@ -1,33 +1,90 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { formatCurrency, formatPercent } from '../utils/calculations';
+import { inputTooltips } from '../utils/benchmarkComparison';
+import Tooltip, { InfoIcon } from './Tooltip';
 import TierManager from './TierManager';
 
-function SliderInput({ label, value, onChange, min, max, step, format = 'number', hint }) {
-  const displayValue = format === 'percent' ? formatPercent(value) :
-                       format === 'currency' ? formatCurrency(value) :
-                       value.toLocaleString();
+function CollapsibleSection({ title, children, defaultOpen = true }) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const contentRef = useRef(null);
+  const [height, setHeight] = useState(defaultOpen ? 'auto' : '0px');
+
+  useEffect(() => {
+    if (contentRef.current) {
+      setHeight(isOpen ? `${contentRef.current.scrollHeight}px` : '0px');
+    }
+  }, [isOpen]);
 
   return (
-    <div className="mb-4">
-      <div className="flex justify-between items-center mb-1">
-        <label className="text-sm font-medium text-gray-700">{label}</label>
-        <span className="text-sm font-semibold text-blue-600">{displayValue}</span>
+    <div className="mb-6 pb-6 border-b border-gray-100 last:border-b-0 last:mb-0 last:pb-0">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between group mb-4"
+      >
+        <h3 className="section-header group-hover:text-brand-600 transition-colors">{title}</h3>
+        <svg
+          className={`w-5 h-5 text-gray-400 group-hover:text-brand-500 transition-all duration-300 ${isOpen ? 'rotate-180' : ''}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div
+        style={{ height, overflow: 'hidden' }}
+        className="transition-all duration-300 ease-in-out"
+      >
+        <div ref={contentRef}>
+          {children}
+        </div>
       </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-      />
-      {hint && <p className="text-xs text-gray-500 mt-1">{hint}</p>}
     </div>
   );
 }
 
-function NumberInput({ label, value, onChange, min, max, step, prefix = '', suffix = '', hint }) {
+function SliderInput({ label, value, onChange, min, max, step, format = 'number', hint, tooltip }) {
+  const displayValue = format === 'percent' ? formatPercent(value) :
+                       format === 'currency' ? formatCurrency(value) :
+                       value.toLocaleString();
+
+  const percentage = ((value - min) / (max - min)) * 100;
+
+  return (
+    <div className="mb-4">
+      <div className="flex justify-between items-center mb-2">
+        <label className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+          {label}
+          {tooltip && (
+            <Tooltip content={tooltip}>
+              <InfoIcon />
+            </Tooltip>
+          )}
+        </label>
+        <span className="text-sm font-semibold font-mono text-brand-600 bg-brand-50 px-2 py-0.5 rounded">{displayValue}</span>
+      </div>
+      <div className="relative h-5 flex items-center">
+        <div className="absolute left-0 right-0 h-2 bg-brand-100 rounded-full" />
+        <div
+          className="absolute left-0 h-2 bg-gradient-to-r from-brand-400 to-brand-600 rounded-full transition-all duration-150"
+          style={{ width: `${percentage}%` }}
+        />
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(parseFloat(e.target.value))}
+          className="absolute inset-0 w-full appearance-none cursor-pointer bg-transparent z-10 slider-thumb"
+        />
+      </div>
+      {hint && <p className="text-xs text-gray-500 mt-2">{hint}</p>}
+    </div>
+  );
+}
+
+function NumberInput({ label, value, onChange, min, max, step, prefix = '', suffix = '', hint, tooltip }) {
   const [localValue, setLocalValue] = useState(value.toString());
 
   useEffect(() => {
@@ -46,10 +103,17 @@ function NumberInput({ label, value, onChange, min, max, step, prefix = '', suff
 
   return (
     <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+        {label}
+        {tooltip && (
+          <Tooltip content={tooltip}>
+            <InfoIcon />
+          </Tooltip>
+        )}
+      </label>
       <div className="relative">
         {prefix && (
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">{prefix}</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">{prefix}</span>
         )}
         <input
           type="number"
@@ -59,13 +123,13 @@ function NumberInput({ label, value, onChange, min, max, step, prefix = '', suff
           value={localValue}
           onChange={handleChange}
           onBlur={handleBlur}
-          className={`w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${prefix ? 'pl-7' : ''} ${suffix ? 'pr-8' : ''}`}
+          className={`w-full px-3 py-2.5 font-mono border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors ${prefix ? 'pl-7' : ''} ${suffix ? 'pr-8' : ''}`}
         />
         {suffix && (
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">{suffix}</span>
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">{suffix}</span>
         )}
       </div>
-      {hint && <p className="text-xs text-gray-500 mt-1">{hint}</p>}
+      {hint && <p className="text-xs text-gray-500 mt-1.5">{hint}</p>}
     </div>
   );
 }
@@ -89,7 +153,7 @@ function PercentInput({ label, value, onChange, min = 0, max = 1, step = 0.001, 
 
   return (
     <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
       <div className="relative">
         <input
           type="number"
@@ -99,23 +163,22 @@ function PercentInput({ label, value, onChange, min = 0, max = 1, step = 0.001, 
           value={localValue}
           onChange={handleChange}
           onBlur={handleBlur}
-          className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="w-full px-3 py-2.5 pr-8 font-mono border border-gray-200 rounded-lg bg-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-colors"
         />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">%</span>
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">%</span>
       </div>
-      {hint && <p className="text-xs text-gray-500 mt-1">{hint}</p>}
+      {hint && <p className="text-xs text-gray-500 mt-1.5">{hint}</p>}
     </div>
   );
 }
 
 export default function InputPanel({ inputs, onInputChange }) {
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-lg font-bold text-gray-900 mb-6">Model Assumptions</h2>
+    <div className="card p-6">
+      <h2 className="text-lg font-bold text-brand-800 mb-6">Model Assumptions</h2>
 
-      {/* Target */}
-      <div className="mb-6 pb-6 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Target</h3>
+      {/* Target - Always visible */}
+      <CollapsibleSection title="Target" defaultOpen={true}>
         <NumberInput
           label="Minimum Success Criteria (Net Profit FY3)"
           value={inputs.minimumSuccessCriteria}
@@ -126,11 +189,10 @@ export default function InputPanel({ inputs, onInputChange }) {
           prefix="$"
           hint="Your target net profit by end of Year 3"
         />
-      </div>
+      </CollapsibleSection>
 
       {/* Traffic & Growth */}
-      <div className="mb-6 pb-6 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Traffic & Growth</h3>
+      <CollapsibleSection title="Traffic & Growth" defaultOpen={false}>
         <NumberInput
           label="Starting Monthly Paid Traffic"
           value={inputs.startingPaidTraffic}
@@ -149,6 +211,7 @@ export default function InputPanel({ inputs, onInputChange }) {
           step={0.005}
           format="percent"
           hint="How much traffic grows each month"
+          tooltip={inputTooltips.monthlyGrowthRate}
         />
         <NumberInput
           label="Organic Traffic (Monthly)"
@@ -159,11 +222,10 @@ export default function InputPanel({ inputs, onInputChange }) {
           step={100}
           hint="Additional non-paid traffic"
         />
-      </div>
+      </CollapsibleSection>
 
       {/* Retention */}
-      <div className="mb-6 pb-6 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Retention</h3>
+      <CollapsibleSection title="Retention" defaultOpen={false}>
         <SliderInput
           label="Customer Referral Rate"
           value={inputs.customerReferralRate}
@@ -173,6 +235,7 @@ export default function InputPanel({ inputs, onInputChange }) {
           step={0.01}
           format="percent"
           hint="15% to 25% is great"
+          tooltip={inputTooltips.customerReferralRate}
         />
         <SliderInput
           label="Monthly Churn Rate"
@@ -183,21 +246,20 @@ export default function InputPanel({ inputs, onInputChange }) {
           step={0.005}
           format="percent"
           hint="2.5% to 5% is great (use 100% for one-time purchases)"
+          tooltip={inputTooltips.monthlyChurn}
         />
-      </div>
+      </CollapsibleSection>
 
       {/* Pricing Tiers */}
-      <div className="mb-6 pb-6 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Pricing & Conversion</h3>
+      <CollapsibleSection title="Pricing & Conversion" defaultOpen={false}>
         <TierManager
           tiers={inputs.pricingTiers}
           onTiersChange={(newTiers) => onInputChange('pricingTiers', newTiers)}
         />
-      </div>
+      </CollapsibleSection>
 
       {/* Revenue & CAC */}
-      <div className="mb-6 pb-6 border-b border-gray-200">
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Margins & Acquisition</h3>
+      <CollapsibleSection title="Margins & Acquisition" defaultOpen={false}>
         <SliderInput
           label="Gross Margin"
           value={inputs.grossMargin}
@@ -207,6 +269,7 @@ export default function InputPanel({ inputs, onInputChange }) {
           step={0.01}
           format="percent"
           hint="SaaS benchmark: 75%+ (Craft Ventures)"
+          tooltip={inputTooltips.grossMargin}
         />
         <NumberInput
           label="Customer Acquisition Cost (CAC)"
@@ -217,12 +280,12 @@ export default function InputPanel({ inputs, onInputChange }) {
           step={1}
           prefix="$"
           hint="Cost to acquire each paying customer"
+          tooltip={inputTooltips.estimatedCAC}
         />
-      </div>
+      </CollapsibleSection>
 
-      {/* Operating Costs */}
-      <div className="mb-6">
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-4">Operating Costs (% of Revenue)</h3>
+      {/* Operating Costs - Collapsed by default */}
+      <CollapsibleSection title="Operating Costs (% of Revenue)" defaultOpen={false}>
         <div className="grid grid-cols-2 gap-4">
           <PercentInput
             label="CC Fees"
@@ -272,7 +335,7 @@ export default function InputPanel({ inputs, onInputChange }) {
             prefix="$"
           />
         </div>
-      </div>
+      </CollapsibleSection>
     </div>
   );
 }
