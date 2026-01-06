@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { formatCurrency, formatPercent, formatNumber, calculateGrossMargin, calculateCACFromAdSpend } from '../utils/calculations';
+import { formatCurrency, formatPercent, formatNumber, calculateCACFromAdSpend } from '../utils/calculations';
 import { inputTooltips } from '../utils/benchmarkComparison';
 import Tooltip, { InfoIcon } from './Tooltip';
 import TierManager from './TierManager';
@@ -348,28 +348,6 @@ export default function InputPanel({ inputs, onInputChange }) {
             max={0.5}
             tooltip={inputTooltips.inventoryCosts}
           />
-        </div>
-        {/* Calculated Gross Margin Display */}
-        <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-          <div className="flex justify-between items-center">
-            <label className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
-              Gross Margin (Calculated)
-              <Tooltip content={inputTooltips.grossMargin}>
-                <InfoIcon />
-              </Tooltip>
-            </label>
-            <span className={`text-lg font-bold font-mono ${calculateGrossMargin(inputs) >= 0.75 ? 'text-brand-600' : 'text-amber-600'}`}>
-              {formatPercent(calculateGrossMargin(inputs))}
-            </span>
-          </div>
-          <p className="text-xs text-gray-500 mt-1">
-            = 100% − (CC Fees + Inference + Delivery + Inventory)
-          </p>
-          {calculateGrossMargin(inputs) < 0.75 && (
-            <p className="text-xs text-amber-600 mt-1 font-medium">
-              ⚠️ Below SaaS benchmark (75%+). Consider optimizing COGS.
-            </p>
-          )}
         </div>
       </CollapsibleSection>
 

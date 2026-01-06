@@ -228,6 +228,7 @@ export function calculateMonthlyProjections(inputs) {
         insurance,
         inventory,
         delivery,
+        inference,
         rent: rentCost,
       },
       totalOperatingCosts,

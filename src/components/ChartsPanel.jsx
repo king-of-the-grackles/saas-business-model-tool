@@ -113,11 +113,18 @@ export default function ChartsPanel({ results, selectedCharts = null, compact = 
       revenue: m.grossRevenue,
       netProfit: m.netProfit,
       cumulativeProfit: monthlyProjections.slice(0, i + 1).reduce((sum, x) => sum + x.netProfit, 0),
+      cumulativeRevenue: monthlyProjections.slice(0, i + 1).reduce((sum, x) => sum + x.grossRevenue, 0),
+      cumulativeCosts: monthlyProjections.slice(0, i + 1).reduce((sum, x) => sum + x.totalOperatingCosts, 0),
       totalCosts: m.totalOperatingCosts,
       cac: m.costs.cac,
       staffing: m.costs.staffing,
       ccFees: m.costs.ccFees,
-      other: m.costs.office + m.costs.insurance + m.costs.inventory + m.costs.delivery + m.costs.rent,
+      office: m.costs.office,
+      insurance: m.costs.insurance,
+      inventory: m.costs.inventory,
+      delivery: m.costs.delivery,
+      inference: m.costs.inference,
+      rent: m.costs.rent,
       arpu: arpu,
     };
 
@@ -146,8 +153,130 @@ export default function ChartsPanel({ results, selectedCharts = null, compact = 
   // Helper to check if chart should be shown
   const showChart = (chartId) => !selectedCharts || selectedCharts.includes(chartId);
 
+  // Find payback month (first month where cumulative revenue >= cumulative costs)
+  const paybackMonth = chartData.find(d => d.cumulativeRevenue >= d.cumulativeCosts);
+  const paybackMonthName = paybackMonth ? paybackMonth.name : null;
+
+  // Find first profitable month (first month where monthly revenue >= monthly costs)
+  const profitableMonth = chartData.find(d => d.revenue >= d.totalCosts);
+  const profitableMonthName = profitableMonth ? profitableMonth.name : null;
+
   return (
     <div className={compact ? "grid grid-cols-1 xl:grid-cols-2 gap-4" : "space-y-6"}>
+      {/* Monthly Profitability Chart */}
+      {showChart('monthly-profitability') && (
+      <ChartCard title={profitableMonthName ? `Monthly Profitability — Profitable: ${profitableMonthName}` : 'Monthly Profitability'}>
+        <ResponsiveContainer width="100%" height={chartHeight}>
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+            <XAxis
+              dataKey="name"
+              tick={{ fontSize: 11, fill: '#6b7280' }}
+              tickLine={false}
+              axisLine={{ stroke: '#e5e7eb' }}
+              interval={5}
+            />
+            <YAxis
+              tick={{ fontSize: 11, fill: '#6b7280' }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend content={<CustomLegend />} />
+            {profitableMonthName && (
+              <ReferenceLine
+                x={profitableMonthName}
+                stroke={chartColors.primary}
+                strokeWidth={2}
+                strokeDasharray="6 4"
+                label={{
+                  value: `Profitable`,
+                  position: 'top',
+                  fill: chartColors.primary,
+                  fontSize: 11,
+                  fontWeight: 600,
+                }}
+              />
+            )}
+            <Line
+              type="monotone"
+              dataKey="revenue"
+              name="Monthly Revenue"
+              stroke={chartColors.success}
+              strokeWidth={2.5}
+              dot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="totalCosts"
+              name="Monthly Costs"
+              stroke={chartColors.danger}
+              strokeWidth={2.5}
+              dot={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </ChartCard>
+      )}
+
+      {/* Payback Timeline Chart (Cumulative) */}
+      {showChart('payback-timeline') && (
+      <ChartCard title={paybackMonthName ? `Payback Timeline — Break-even: ${paybackMonthName}` : 'Payback Timeline'}>
+        <ResponsiveContainer width="100%" height={chartHeight}>
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+            <XAxis
+              dataKey="name"
+              tick={{ fontSize: 11, fill: '#6b7280' }}
+              tickLine={false}
+              axisLine={{ stroke: '#e5e7eb' }}
+              interval={5}
+            />
+            <YAxis
+              tick={{ fontSize: 11, fill: '#6b7280' }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend content={<CustomLegend />} />
+            {paybackMonthName && (
+              <ReferenceLine
+                x={paybackMonthName}
+                stroke={chartColors.primary}
+                strokeWidth={2}
+                strokeDasharray="6 4"
+                label={{
+                  value: `Payback`,
+                  position: 'top',
+                  fill: chartColors.primary,
+                  fontSize: 11,
+                  fontWeight: 600,
+                }}
+              />
+            )}
+            <Line
+              type="monotone"
+              dataKey="cumulativeRevenue"
+              name="Cumulative Revenue"
+              stroke={chartColors.success}
+              strokeWidth={2.5}
+              dot={false}
+            />
+            <Line
+              type="monotone"
+              dataKey="cumulativeCosts"
+              name="Cumulative Costs"
+              stroke={chartColors.danger}
+              strokeWidth={2.5}
+              dot={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </ChartCard>
+      )}
+
       {/* Customer Growth Chart */}
       {showChart('customer-growth') && (
       <ChartCard title="Customer Growth Over Time">
@@ -373,80 +502,69 @@ export default function ChartsPanel({ results, selectedCharts = null, compact = 
       )}
 
       {/* Cost Breakdown */}
-      {showChart('cost-breakdown') && (
-      <ChartCard title="Cost Breakdown Over Time">
-        <ResponsiveContainer width="100%" height={barChartHeight}>
-          <AreaChart data={chartData}>
-            <defs>
-              <linearGradient id="cacGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={chartColors.warning} stopOpacity={0.8}/>
-                <stop offset="95%" stopColor={chartColors.warning} stopOpacity={0.3}/>
-              </linearGradient>
-              <linearGradient id="staffingGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={chartColors.purple} stopOpacity={0.8}/>
-                <stop offset="95%" stopColor={chartColors.purple} stopOpacity={0.3}/>
-              </linearGradient>
-              <linearGradient id="ccGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={chartColors.cyan} stopOpacity={0.8}/>
-                <stop offset="95%" stopColor={chartColors.cyan} stopOpacity={0.3}/>
-              </linearGradient>
-              <linearGradient id="otherGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#9ca3af" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="#9ca3af" stopOpacity={0.3}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
-            <XAxis
-              dataKey="name"
-              tick={{ fontSize: 11, fill: '#6b7280' }}
-              tickLine={false}
-              axisLine={{ stroke: '#e5e7eb' }}
-              interval={5}
-            />
-            <YAxis
-              tick={{ fontSize: 11, fill: '#6b7280' }}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend content={<CustomLegend />} />
-            <Area
-              type="monotone"
-              dataKey="cac"
-              name="CAC"
-              stackId="1"
-              stroke={chartColors.warning}
-              fill="url(#cacGradient)"
-            />
-            <Area
-              type="monotone"
-              dataKey="staffing"
-              name="Staffing"
-              stackId="1"
-              stroke={chartColors.purple}
-              fill="url(#staffingGradient)"
-            />
-            <Area
-              type="monotone"
-              dataKey="ccFees"
-              name="CC Fees"
-              stackId="1"
-              stroke={chartColors.cyan}
-              fill="url(#ccGradient)"
-            />
-            <Area
-              type="monotone"
-              dataKey="other"
-              name="Other"
-              stackId="1"
-              stroke="#6b7280"
-              fill="url(#otherGradient)"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </ChartCard>
-      )}
+      {showChart('cost-breakdown') && (() => {
+        // Define all cost categories with their display config
+        const costCategories = [
+          { key: 'cac', name: 'CAC', color: '#f59e0b' },
+          { key: 'staffing', name: 'Staffing', color: '#8b5cf6' },
+          { key: 'ccFees', name: 'CC Fees', color: '#06b6d4' },
+          { key: 'inference', name: 'Inference/COGS', color: '#ef4444' },
+          { key: 'office', name: 'Office', color: '#64748b' },
+          { key: 'insurance', name: 'Insurance', color: '#10b981' },
+          { key: 'rent', name: 'Rent', color: '#d97706' },
+          { key: 'inventory', name: 'Inventory', color: '#ec4899' },
+          { key: 'delivery', name: 'Delivery', color: '#6366f1' },
+        ];
+
+        // Filter to only categories with non-zero values
+        const activeCosts = costCategories.filter(cat =>
+          chartData.some(d => d[cat.key] > 0)
+        );
+
+        return (
+          <ChartCard title="Cost Breakdown Over Time">
+            <ResponsiveContainer width="100%" height={barChartHeight}>
+              <AreaChart data={chartData}>
+                <defs>
+                  {activeCosts.map(cat => (
+                    <linearGradient key={`${cat.key}Gradient`} id={`${cat.key}Gradient`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={cat.color} stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor={cat.color} stopOpacity={0.3}/>
+                    </linearGradient>
+                  ))}
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                <XAxis
+                  dataKey="name"
+                  tick={{ fontSize: 11, fill: '#6b7280' }}
+                  tickLine={false}
+                  axisLine={{ stroke: '#e5e7eb' }}
+                  interval={5}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: '#6b7280' }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend content={<CustomLegend />} />
+                {activeCosts.map(cat => (
+                  <Area
+                    key={cat.key}
+                    type="monotone"
+                    dataKey={cat.key}
+                    name={cat.name}
+                    stackId="1"
+                    stroke={cat.color}
+                    fill={`url(#${cat.key}Gradient)`}
+                  />
+                ))}
+              </AreaChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        );
+      })()}
     </div>
   );
 }

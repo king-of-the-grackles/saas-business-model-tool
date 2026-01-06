@@ -105,8 +105,7 @@ export default function App() {
                 <div className="animate-fade-in-up opacity-0 stagger-3">
                   <ChartsPanel
                     results={results}
-                    selectedCharts={['annual-summary', 'revenue-profit']}
-                    compact
+                    selectedCharts={['monthly-profitability']}
                   />
                 </div>
               </div>

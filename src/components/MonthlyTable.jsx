@@ -129,8 +129,11 @@ export default function MonthlyTable({ results }) {
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-lg font-bold text-gray-900 mb-4">Monthly Projections</h2>
-      <p className="text-sm text-gray-600 mb-4">Click a year to expand and view monthly details.</p>
+      <h2 className="text-lg font-bold text-gray-900 mb-2">Monthly Projections</h2>
+      <p className="text-sm text-gray-500 mb-4">
+        Each row shows that month's actual figures (not cumulative). Revenue, costs, and profit are monthly totals.
+        Retained shows end-of-month customer count. Click a year to expand.
+      </p>
 
       <YearSection year={1} months={year1Months} yearlySummary={yearlySummaries[0]} />
       <YearSection year={2} months={year2Months} yearlySummary={yearlySummaries[1]} />
