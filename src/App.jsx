@@ -34,8 +34,8 @@ export default function App() {
           {/* Row 1: Title + Reset */}
           <div className="py-3 flex justify-between items-center animate-fade-in">
             <div>
-              <h1 className="text-xl font-bold text-brand-800">SaaS Business Model Stress Test</h1>
-              <p className="text-xs text-brand-500">3-year revenue and profit projections</p>
+              <h1 className="text-xl font-bold text-brand-800">Revenue Lab</h1>
+              <p className="text-xs text-brand-500">SaaS revenue modeling & scenario planning</p>
             </div>
             <div className="flex items-center gap-2">
               <a
