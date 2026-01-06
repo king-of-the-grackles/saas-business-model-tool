@@ -13,7 +13,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from 'recharts';
-import { formatCurrency, formatNumber, calculateARPU, getTotalConversionRate } from '../utils/calculations';
+import { formatCurrency, formatNumber, calculateARPU, getTotalDistribution } from '../utils/calculations';
 
 // Brand-aligned color palette
 const chartColors = {
@@ -89,13 +89,15 @@ function CustomLegend({ payload }) {
   );
 }
 
-export default function ChartsPanel({ results }) {
+export default function ChartsPanel({ results, selectedCharts = null, compact = false }) {
   const { monthlyProjections, inputs } = results;
+  const chartHeight = compact ? 220 : 300;
+  const barChartHeight = compact ? 200 : 280;
 
   // Calculate ARPU and tier data
   const tiers = inputs.pricingTiers || [];
   const arpu = calculateARPU(tiers);
-  const totalConversionRate = getTotalConversionRate(tiers);
+  const totalDistribution = getTotalDistribution(tiers);
 
   // Prepare data for charts
   const chartData = monthlyProjections.map((m, i) => {
@@ -119,10 +121,10 @@ export default function ChartsPanel({ results }) {
       arpu: arpu,
     };
 
-    // Add per-tier revenue breakdown
-    if (tiers.length > 0 && totalConversionRate > 0) {
+    // Add per-tier revenue breakdown (using distribution weights)
+    if (tiers.length > 0 && totalDistribution > 0) {
       tiers.forEach((tier) => {
-        const tierWeight = tier.conversionRate / totalConversionRate;
+        const tierWeight = (tier.distribution || 0);
         baseData[`tier_${tier.id}`] = m.totalRetained * tier.monthlyPrice * tierWeight;
       });
     }
@@ -141,11 +143,15 @@ export default function ChartsPanel({ results }) {
     };
   });
 
+  // Helper to check if chart should be shown
+  const showChart = (chartId) => !selectedCharts || selectedCharts.includes(chartId);
+
   return (
-    <div className="space-y-6">
+    <div className={compact ? "grid grid-cols-1 xl:grid-cols-2 gap-4" : "space-y-6"}>
       {/* Customer Growth Chart */}
+      {showChart('customer-growth') && (
       <ChartCard title="Customer Growth Over Time">
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={chartHeight}>
           <AreaChart data={chartData}>
             <defs>
               <linearGradient id="customerGradient" x1="0" y1="0" x2="0" y2="1">
@@ -191,10 +197,12 @@ export default function ChartsPanel({ results }) {
           </AreaChart>
         </ResponsiveContainer>
       </ChartCard>
+      )}
 
       {/* Customer Acquisition Funnel */}
+      {showChart('acquisition-funnel') && (
       <ChartCard title="Customer Acquisition Funnel">
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={chartHeight}>
           <AreaChart data={chartData}>
             <defs>
               <linearGradient id="trafficGradient" x1="0" y1="0" x2="0" y2="1">
@@ -244,10 +252,12 @@ export default function ChartsPanel({ results }) {
           </AreaChart>
         </ResponsiveContainer>
       </ChartCard>
+      )}
 
       {/* Revenue & Profit Chart */}
+      {showChart('revenue-profit') && (
       <ChartCard title="Revenue & Profit Trends">
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={chartHeight}>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
             <XAxis
@@ -294,11 +304,12 @@ export default function ChartsPanel({ results }) {
           </LineChart>
         </ResponsiveContainer>
       </ChartCard>
+      )}
 
       {/* Revenue by Tier Chart */}
-      {tiers.length > 0 && (
+      {showChart('revenue-tier') && tiers.length > 0 && (
         <ChartCard title="Revenue by Pricing Tier">
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={chartHeight}>
             <AreaChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
               <XAxis
@@ -334,8 +345,9 @@ export default function ChartsPanel({ results }) {
       )}
 
       {/* Yearly Summary Bar Chart */}
+      {showChart('annual-summary') && (
       <ChartCard title="Annual Revenue vs Costs">
-        <ResponsiveContainer width="100%" height={280}>
+        <ResponsiveContainer width="100%" height={barChartHeight}>
           <BarChart data={yearlyData} barGap={4}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
             <XAxis
@@ -358,10 +370,12 @@ export default function ChartsPanel({ results }) {
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>
+      )}
 
       {/* Cost Breakdown */}
+      {showChart('cost-breakdown') && (
       <ChartCard title="Cost Breakdown Over Time">
-        <ResponsiveContainer width="100%" height={280}>
+        <ResponsiveContainer width="100%" height={barChartHeight}>
           <AreaChart data={chartData}>
             <defs>
               <linearGradient id="cacGradient" x1="0" y1="0" x2="0" y2="1">
@@ -432,6 +446,7 @@ export default function ChartsPanel({ results }) {
           </AreaChart>
         </ResponsiveContainer>
       </ChartCard>
+      )}
     </div>
   );
 }

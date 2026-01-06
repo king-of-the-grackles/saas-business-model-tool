@@ -198,7 +198,7 @@ export default function ScenarioComparison({ scenarios, onClose }) {
                     <td className="px-4 py-3 text-sm text-gray-900">CAC</td>
                     {results.map(r => (
                       <td key={r.id} className="px-4 py-3 text-sm text-right text-gray-900">
-                        {formatCurrency(r.inputs.estimatedCAC)}
+                        {formatCurrency(r.summaryMetrics.cac)}
                       </td>
                     ))}
                   </tr>

@@ -49,10 +49,10 @@ function PrimaryMetricCard({ label, value, subtext, warning, success }) {
   }
 
   return (
-    <div className={`relative ${bgColor} rounded-xl border ${borderColor} p-5 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${gradientOverlay}`}>
-      <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">{label}</p>
-      <p className={`text-3xl font-mono font-bold ${textColor} mt-2 tabular-nums`}>{value}</p>
-      {subtext && <p className={`text-sm ${subtextColor} mt-2 font-medium`}>{subtext}</p>}
+    <div className={`relative ${bgColor} rounded-xl border ${borderColor} p-4 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 ${gradientOverlay}`}>
+      <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</p>
+      <p className={`text-2xl font-mono font-bold ${textColor} mt-1.5 tabular-nums`}>{value}</p>
+      {subtext && <p className={`text-xs ${subtextColor} mt-1.5 font-medium`}>{subtext}</p>}
     </div>
   );
 }
@@ -86,8 +86,8 @@ function SecondaryMetricCard({ label, value, subtext, highlight, warning, succes
   }
 
   return (
-    <div className={`${bgColor} rounded-lg border ${borderColor} p-4 transition-all duration-200 hover:shadow-md relative overflow-hidden`}>
-      <div className={`absolute top-0 left-0 w-1 h-full ${accentBar}`} />
+    <div className={`${bgColor} rounded-lg border ${borderColor} p-3 transition-all duration-200 hover:shadow-md relative overflow-hidden`}>
+      <div className={`absolute top-0 left-0 w-0.5 h-full ${accentBar}`} />
       <p className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-1">
         {label}
         {tooltip && (
@@ -96,8 +96,8 @@ function SecondaryMetricCard({ label, value, subtext, highlight, warning, succes
           </Tooltip>
         )}
       </p>
-      <p className={`text-xl font-mono font-bold ${textColor} mt-1 tabular-nums`}>{value}</p>
-      {subtext && <p className={`text-xs ${subtextColor} mt-1`}>{subtext}</p>}
+      <p className={`text-lg font-mono font-bold ${textColor} mt-0.5 tabular-nums`}>{value}</p>
+      {subtext && <p className={`text-xs ${subtextColor} mt-0.5`}>{subtext}</p>}
     </div>
   );
 }
@@ -138,7 +138,8 @@ export default function SummaryMetrics({ results }) {
     cacPayback,
     grossMargin,
     arpu,
-    totalConversionRate,
+    conversionRate,
+    cac,
     netProfitFY1,
     netProfitFY2,
     netProfitFY3,
@@ -158,13 +159,13 @@ export default function SummaryMetrics({ results }) {
   const endCustomersY3 = yearlySummaries[2]?.endRetained || 0;
 
   return (
-    <div className="card p-6">
-      <h2 className="text-lg font-bold text-brand-800 mb-6">Key Metrics</h2>
+    <div className="card p-5">
+      <h2 className="text-base font-bold text-brand-800 mb-5">Key Metrics</h2>
 
       {/* Net Profit Section - Primary Tier */}
-      <div className="mb-8">
-        <h3 className="section-header mb-4">Net Profit</h3>
-        <div className="grid grid-cols-3 gap-5">
+      <div className="mb-6">
+        <h3 className="section-header mb-3">Net Profit</h3>
+        <div className="grid grid-cols-3 gap-3">
           <PrimaryMetricCard
             label="Year 1"
             value={formatCurrency(netProfitFY1, true)}
@@ -216,9 +217,9 @@ export default function SummaryMetrics({ results }) {
       </div>
 
       {/* Unit Economics - Secondary Tier */}
-      <div className="mb-8">
-        <h3 className="section-header mb-4">Unit Economics</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="mb-6">
+        <h3 className="section-header mb-3">Unit Economics</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
           <SecondaryMetricCard
             label="ARPU"
             value={formatCurrency(arpu)}
@@ -236,7 +237,7 @@ export default function SummaryMetrics({ results }) {
           />
           <SecondaryMetricCard
             label="CAC"
-            value={formatCurrency(inputs.estimatedCAC)}
+            value={formatCurrency(cac)}
             subtext={benchmarkText.cacPayback}
             tooltip={metricTooltips.cac}
           />
@@ -276,8 +277,8 @@ export default function SummaryMetrics({ results }) {
 
       {/* Growth Metrics - Tertiary Tier */}
       <div>
-        <h3 className="section-header mb-3">Growth</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <h3 className="section-header mb-2">Growth</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
           <TertiaryMetricCard
             label="Monthly Growth"
             value={formatPercent(inputs.monthlyGrowthRate)}
@@ -295,7 +296,7 @@ export default function SummaryMetrics({ results }) {
           />
           <TertiaryMetricCard
             label="Conversion"
-            value={formatPercent(totalConversionRate)}
+            value={formatPercent(conversionRate)}
             subtext={benchmarkText.conversion}
             tooltip={metricTooltips.conversion}
           />

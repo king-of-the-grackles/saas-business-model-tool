@@ -2,23 +2,26 @@
 
 export const DEFAULT_INPUTS = {
   minimumSuccessCriteria: 1000000,
-  monthlyGrowthRate: 0.02,
-  startingPaidTraffic: 2000,
+  monthlyGrowthRate: 0.10, // 10% - "good" benchmark for growth stage
+  startingPaidTraffic: 2000, // 1-2K typical for early-stage
+  conversionRate: 0.02, // 2% - single conversion rate for all traffic
   pricingTiers: [
-    { id: 'tier-1', name: 'Standard', monthlyPrice: 15, conversionRate: 0.02 },
+    { id: 'tier-1', name: 'Starter', monthlyPrice: 29, distribution: 0.60, isLocked: false },
+    { id: 'tier-2', name: 'Pro', monthlyPrice: 79, distribution: 0.30, isLocked: true },
+    { id: 'tier-3', name: 'Business', monthlyPrice: 199, distribution: 0.10, isLocked: false },
   ],
-  customerReferralRate: 0.05,
-  estimatedCAC: 15,
-  monthlyChurn: 0.05, // Changed from 0.12 - industry benchmark is 3.5-5% monthly
-  grossMargin: 0.80, // 80% typical for SaaS (Craft Ventures: 75%+ required)
-  ccProcessingFees: 0.025,
-  staffingCosts: 0.15,
-  officeSupplies: 0.02,
-  businessInsurance: 0.01,
-  inventoryCosts: 0,
-  deliveryCosts: 0,
-  rent: 0,
-  organicTraffic: 0,
+  customerReferralRate: 0.10, // 10% - at "good" threshold (15-25% is great)
+  monthlyAdSpend: 5000, // $5,000/mo marketing budget (CAC calculated from traffic × conversion)
+  monthlyChurn: 0.035, // 3.5% - SaaS median (2.5-5% is good range)
+  ccProcessingFees: 0.025, // 2.5% - standard Stripe/payment processor
+  staffingCosts: 0.15, // 15% - lean early-stage
+  officeSupplies: 0.02, // 2% - low end of 2-5% range
+  businessInsurance: 0.01, // 1% - middle of 0.5-2% range
+  inventoryCosts: 0, // 0% for SaaS/digital
+  deliveryCosts: 0, // 0% for SaaS/digital
+  inferenceCosts: 0, // 0% default (set 15-40% for AI-powered apps)
+  rent: 0, // $0 - remote-first default
+  organicTraffic: 500, // Some baseline organic/SEO traffic
 };
 
 // Calculate Annual Compound Growth Rate from monthly rate
@@ -58,22 +61,25 @@ export function calculateLTVCACRatio(ltv, cac) {
   return ltv / cac;
 }
 
-// Calculate total conversion rate from all pricing tiers
-export function getTotalConversionRate(tiers) {
-  if (!tiers || tiers.length === 0) return 0;
-  return tiers.reduce((sum, tier) => sum + tier.conversionRate, 0);
+// Calculate Gross Margin from COGS inputs
+// COGS = CC Fees + Inference + Delivery + Inventory (per SaaS Capital standards)
+export function calculateGrossMargin(inputs) {
+  const cogs = inputs.ccProcessingFees + inputs.inferenceCosts +
+               inputs.deliveryCosts + inputs.inventoryCosts;
+  return Math.max(0, 1 - cogs); // Ensure non-negative
 }
 
-// Calculate ARPU (Average Revenue Per User) - weighted by conversion rates
+// Calculate total distribution from all pricing tiers (should sum to 1.0)
+export function getTotalDistribution(tiers) {
+  if (!tiers || tiers.length === 0) return 0;
+  return tiers.reduce((sum, tier) => sum + (tier.distribution || 0), 0);
+}
+
+// Calculate ARPU (Average Revenue Per User) - weighted by distribution
 export function calculateARPU(tiers) {
   if (!tiers || tiers.length === 0) return 0;
-  const totalConversionRate = getTotalConversionRate(tiers);
-  if (totalConversionRate === 0) return 0;
-
-  return tiers.reduce((sum, tier) => {
-    const weight = tier.conversionRate / totalConversionRate;
-    return sum + (tier.monthlyPrice * weight);
-  }, 0);
+  // ARPU = sum of (price × distribution) for each tier
+  return tiers.reduce((sum, tier) => sum + (tier.monthlyPrice * (tier.distribution || 0)), 0);
 }
 
 // Generate unique tier ID
@@ -81,35 +87,44 @@ export function generateTierId() {
   return 'tier-' + Date.now().toString(36) + Math.random().toString(36).substr(2, 4);
 }
 
+// Calculate CAC from Monthly Ad Spend
+// CAC = Ad Spend ÷ Paid Conversions, where Paid Conversions = Traffic × Conversion Rate
+export function calculateCACFromAdSpend(adSpend, paidTraffic, conversionRate) {
+  const paidConversions = paidTraffic * conversionRate;
+  if (paidConversions === 0) return Infinity;
+  return adSpend / paidConversions;
+}
+
 // Validate tier configuration
 export function validateTiers(tiers) {
   if (!tiers || tiers.length === 0) {
     return { valid: false, error: 'At least one pricing tier is required' };
   }
-  const totalRate = getTotalConversionRate(tiers);
-  if (totalRate > 1) {
-    return { valid: false, error: 'Total conversion rate cannot exceed 100%' };
+  const totalDistribution = getTotalDistribution(tiers);
+  // Allow small floating point tolerance
+  if (totalDistribution < 0.99 || totalDistribution > 1.01) {
+    return { valid: false, error: 'Distribution must sum to 100%', totalDistribution };
   }
-  if (totalRate === 0) {
-    return { valid: false, error: 'At least one tier must have a conversion rate > 0' };
-  }
-  return { valid: true };
+  return { valid: true, totalDistribution };
 }
 
 // Calculate summary metrics from inputs
 export function calculateSummaryMetrics(inputs) {
   const acl = calculateACL(inputs.monthlyChurn);
-  const grossMargin = inputs.grossMargin || 0.80;
+  const grossMargin = calculateGrossMargin(inputs);
 
-  // Calculate ARPU from pricing tiers
+  // Calculate ARPU from pricing tiers (weighted by distribution)
   const arpu = calculateARPU(inputs.pricingTiers);
-  const totalConversionRate = getTotalConversionRate(inputs.pricingTiers);
+  const conversionRate = inputs.conversionRate; // Now a top-level input
+
+  // Calculate CAC from monthly ad spend
+  const cac = calculateCACFromAdSpend(inputs.monthlyAdSpend, inputs.startingPaidTraffic, conversionRate);
 
   // LTV and CAC payback use ARPU instead of single price
   const ltv = calculateLTV(arpu, acl, grossMargin);
-  const ltvCacRatio = calculateLTVCACRatio(ltv, inputs.estimatedCAC);
+  const ltvCacRatio = calculateLTVCACRatio(ltv, cac);
   const cagr = calculateCAGR(inputs.monthlyGrowthRate);
-  const cacPayback = calculateCACPayback(arpu, grossMargin, inputs.estimatedCAC);
+  const cacPayback = calculateCACPayback(arpu, grossMargin, cac);
 
   return {
     cagr,
@@ -119,7 +134,8 @@ export function calculateSummaryMetrics(inputs) {
     cacPayback,
     grossMargin,
     arpu,
-    totalConversionRate,
+    conversionRate,
+    cac, // Include calculated CAC in metrics
   };
 }
 
@@ -128,9 +144,12 @@ export function calculateMonthlyProjections(inputs) {
   const months = [];
   let previousRetained = 0;
 
-  // Calculate ARPU and total conversion rate from pricing tiers
+  // Calculate ARPU from pricing tiers (weighted by distribution)
   const arpu = calculateARPU(inputs.pricingTiers);
-  const totalConversionRate = getTotalConversionRate(inputs.pricingTiers);
+  const conversionRate = inputs.conversionRate; // Now a top-level input
+
+  // Calculate CAC from ad spend (stays constant as you scale)
+  const cac = calculateCACFromAdSpend(inputs.monthlyAdSpend, inputs.startingPaidTraffic, conversionRate);
 
   for (let i = 0; i < 36; i++) {
     const year = Math.floor(i / 12) + 1;
@@ -143,8 +162,8 @@ export function calculateMonthlyProjections(inputs) {
     const organicTraffic = inputs.organicTraffic;
     const totalTraffic = paidTraffic + organicTraffic;
 
-    // Paid conversions from traffic (using total conversion rate from all tiers)
-    const paidConversions = Math.round(paidTraffic * totalConversionRate);
+    // Paid conversions from traffic (using single conversion rate input)
+    const paidConversions = Math.round(paidTraffic * conversionRate);
 
     // Previous month retained customers
     const prevRetainedForChurn = previousRetained;
@@ -174,15 +193,16 @@ export function calculateMonthlyProjections(inputs) {
 
     // Operating costs
     const ccFees = grossRevenue * inputs.ccProcessingFees;
-    const cacCost = paidConversions * inputs.estimatedCAC;
+    const cacCost = paidConversions * cac;
     const staffing = grossRevenue * inputs.staffingCosts;
     const office = grossRevenue * inputs.officeSupplies;
     const insurance = grossRevenue * inputs.businessInsurance;
     const inventory = grossRevenue * inputs.inventoryCosts;
     const delivery = grossRevenue * inputs.deliveryCosts;
+    const inference = grossRevenue * inputs.inferenceCosts;
     const rentCost = inputs.rent;
 
-    const totalOperatingCosts = ccFees + cacCost + staffing + office + insurance + inventory + delivery + rentCost;
+    const totalOperatingCosts = ccFees + cacCost + staffing + office + insurance + inventory + delivery + inference + rentCost;
     const netProfit = grossRevenue - totalOperatingCosts;
     const netProfitMargin = grossRevenue > 0 ? netProfit / grossRevenue : 0;
 

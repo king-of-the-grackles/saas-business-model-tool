@@ -88,10 +88,22 @@ export const benchmarkText = {
 
 // Detailed tooltip content for input guidance
 export const inputTooltips = {
+  minimumSuccessCriteria: 'Your target net profit by end of Year 3. SaaS companies typically aim for profitability by Y3. Set based on your runway and growth expectations.',
+  startingPaidTraffic: 'Visitors/month at launch. Median SaaS: ~4K sessions/month. Early-stage: 1-2K is typical starting point. Depends on CAC budget and channel mix.',
+  organicTraffic: 'Non-paid traffic (SEO, direct, referrals). Target: 10% MoM growth. Organic has 702% ROI vs 31% for PPC. Cost per lead: $147 organic vs $280 paid.',
   monthlyGrowthRate: '15%+ MoM excellent for early stage (<$1M ARR). 10%+ good for growth stage (≈3x YoY growth).',
   customerReferralRate: '15-25% = great organic growth. 10-15% = good. <10% = room to improve.',
   monthlyChurn: 'SaaS median: 3.5%. <2.5% = great. 2.5-5% = good. >5% = concerning. Use 100% for one-time purchases.',
-  grossMargin: 'SaaS minimum: 75%. Target: 80-85%. Lower margins may indicate operational inefficiency.',
-  estimatedCAC: 'Should payback in <12 months. Formula: CAC ÷ (ARPU × Gross Margin).',
+  grossMargin: 'Calculated: 100% − COGS. SaaS benchmark: 80-85% (minimum 75%). COGS includes CC fees, inference costs, delivery, and inventory. Lower margin may indicate high API costs or marketplace fees.',
+  monthlyAdSpend: 'Your total monthly marketing/advertising budget. CAC is auto-calculated: Ad Spend ÷ Paid Conversions. SMB SaaS typically $1K-10K/mo.',
   conversionRate: 'B2B Enterprise: 0.6-1%. Mid-Market: 1-2%. eCommerce: 2-4%. B2C SaaS: 2-5%.',
+  // Operating Costs tooltips
+  ccProcessingFees: 'Online/SaaS: 2.25-2.50% typical. <2% = excellent, 2-2.75% = normal, >3% = investigate.',
+  staffingCosts: 'SaaS medians (2025): Sales 13%, Support 8%, R&D 22% of ARR. 15-20% is lean for early-stage.',
+  officeSupplies: 'SaaS G&A median: 14% total. Office/equipment portion: 2-5% typical.',
+  businessInsurance: '0.5-2% of revenue (~$700-$3K/yr for <$1M revenue). Includes liability, E&O, cyber.',
+  inventoryCosts: 'SaaS/digital: 0%. E-commerce/physical: 20-30% typical.',
+  deliveryCosts: 'Marketplace fees: Amazon 8-15%, Etsy ~9.5%, Shopify ~2.9%. Shipping/fulfillment for physical goods.',
+  inferenceCosts: 'AI/LLM API costs: 15-40% of revenue typical. Lowers gross margin from 80% to 40-60%. Model choice matters: GPT-4o ($5/$20/M) vs Haiku ($0.80/$4/M) vs DeepSeek ($0.28/$0.42/M).',
+  rent: 'Fixed monthly overhead. Remote-first often $0. Varies by location.',
 };

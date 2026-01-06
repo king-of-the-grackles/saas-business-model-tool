@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { formatCurrency, formatPercent } from '../utils/calculations';
+import { formatCurrency, formatPercent, formatNumber, calculateGrossMargin, calculateCACFromAdSpend } from '../utils/calculations';
 import { inputTooltips } from '../utils/benchmarkComparison';
 import Tooltip, { InfoIcon } from './Tooltip';
 import TierManager from './TierManager';
@@ -11,7 +11,7 @@ function CollapsibleSection({ title, children, defaultOpen = true }) {
 
   useEffect(() => {
     if (contentRef.current) {
-      setHeight(isOpen ? `${contentRef.current.scrollHeight}px` : '0px');
+      setHeight(isOpen ? 'auto' : '0px');
     }
   }, [isOpen]);
 
@@ -134,7 +134,7 @@ function NumberInput({ label, value, onChange, min, max, step, prefix = '', suff
   );
 }
 
-function PercentInput({ label, value, onChange, min = 0, max = 1, step = 0.001, hint }) {
+function PercentInput({ label, value, onChange, min = 0, max = 1, step = 0.001, hint, tooltip }) {
   const [localValue, setLocalValue] = useState((value * 100).toFixed(1));
 
   useEffect(() => {
@@ -153,7 +153,14 @@ function PercentInput({ label, value, onChange, min = 0, max = 1, step = 0.001, 
 
   return (
     <div className="mb-4">
-      <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
+      <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+        {label}
+        {tooltip && (
+          <Tooltip content={tooltip}>
+            <InfoIcon />
+          </Tooltip>
+        )}
+      </label>
       <div className="relative">
         <input
           type="number"
@@ -188,11 +195,12 @@ export default function InputPanel({ inputs, onInputChange }) {
           step={10000}
           prefix="$"
           hint="Your target net profit by end of Year 3"
+          tooltip={inputTooltips.minimumSuccessCriteria}
         />
       </CollapsibleSection>
 
-      {/* Traffic & Growth */}
-      <CollapsibleSection title="Traffic & Growth" defaultOpen={false}>
+      {/* Traffic & Acquisition */}
+      <CollapsibleSection title="Traffic & Acquisition" defaultOpen={false}>
         <NumberInput
           label="Starting Monthly Paid Traffic"
           value={inputs.startingPaidTraffic}
@@ -201,6 +209,7 @@ export default function InputPanel({ inputs, onInputChange }) {
           max={100000}
           step={100}
           hint="Visitors per month at launch"
+          tooltip={inputTooltips.startingPaidTraffic}
         />
         <SliderInput
           label="Monthly Traffic Growth Rate"
@@ -221,7 +230,57 @@ export default function InputPanel({ inputs, onInputChange }) {
           max={100000}
           step={100}
           hint="Additional non-paid traffic"
+          tooltip={inputTooltips.organicTraffic}
         />
+
+        {/* Conversion Rate - moved from Pricing section */}
+        <SliderInput
+          label="Conversion Rate"
+          value={inputs.conversionRate}
+          onChange={(v) => onInputChange('conversionRate', v)}
+          min={0.001}
+          max={0.10}
+          step={0.001}
+          format="percent"
+          hint="% of visitors who become customers"
+          tooltip={inputTooltips.conversionRate}
+        />
+
+        {/* Monthly Ad Spend with Calculated CAC */}
+        <div className="border-t border-gray-100 mt-4 pt-4">
+          <NumberInput
+            label="Starting Monthly Ad Spend"
+            value={inputs.monthlyAdSpend}
+            onChange={(v) => onInputChange('monthlyAdSpend', v)}
+            min={0}
+            max={100000}
+            step={100}
+            prefix="$"
+            hint="Your total monthly marketing budget"
+            tooltip={inputTooltips.monthlyAdSpend}
+          />
+
+          {/* Calculated CAC Display */}
+          <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+                Customer Acquisition Cost (CAC)
+                <Tooltip content="Auto-calculated: Ad Spend ÷ Paid Conversions. This is what it costs you to acquire each paying customer.">
+                  <InfoIcon />
+                </Tooltip>
+              </label>
+              <span className="text-lg font-bold font-mono text-brand-600">
+                {formatCurrency(calculateCACFromAdSpend(inputs.monthlyAdSpend, inputs.startingPaidTraffic, inputs.conversionRate))}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              = {formatCurrency(inputs.monthlyAdSpend)} ÷ ({formatNumber(inputs.startingPaidTraffic)} × {formatPercent(inputs.conversionRate)})
+            </p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              {formatNumber(Math.round(inputs.startingPaidTraffic * inputs.conversionRate))} paid customers/month
+            </p>
+          </div>
+        </div>
       </CollapsibleSection>
 
       {/* Retention */}
@@ -250,78 +309,93 @@ export default function InputPanel({ inputs, onInputChange }) {
         />
       </CollapsibleSection>
 
-      {/* Pricing Tiers */}
-      <CollapsibleSection title="Pricing & Conversion" defaultOpen={false}>
+      {/* Pricing */}
+      <CollapsibleSection title="Pricing" defaultOpen={false}>
         <TierManager
           tiers={inputs.pricingTiers}
           onTiersChange={(newTiers) => onInputChange('pricingTiers', newTiers)}
         />
       </CollapsibleSection>
 
-      {/* Revenue & CAC */}
-      <CollapsibleSection title="Margins & Acquisition" defaultOpen={false}>
-        <SliderInput
-          label="Gross Margin"
-          value={inputs.grossMargin}
-          onChange={(v) => onInputChange('grossMargin', v)}
-          min={0.6}
-          max={0.95}
-          step={0.01}
-          format="percent"
-          hint="SaaS benchmark: 75%+ (Craft Ventures)"
-          tooltip={inputTooltips.grossMargin}
-        />
-        <NumberInput
-          label="Customer Acquisition Cost (CAC)"
-          value={inputs.estimatedCAC}
-          onChange={(v) => onInputChange('estimatedCAC', v)}
-          min={1}
-          max={500}
-          step={1}
-          prefix="$"
-          hint="Cost to acquire each paying customer"
-          tooltip={inputTooltips.estimatedCAC}
-        />
-      </CollapsibleSection>
-
-      {/* Operating Costs - Collapsed by default */}
-      <CollapsibleSection title="Operating Costs (% of Revenue)" defaultOpen={false}>
+      {/* COGS - Cost of Goods Sold */}
+      <CollapsibleSection title="COGS (Cost of Goods Sold)" defaultOpen={false}>
         <div className="grid grid-cols-2 gap-4">
           <PercentInput
             label="CC Fees"
             value={inputs.ccProcessingFees}
             onChange={(v) => onInputChange('ccProcessingFees', v)}
             max={0.1}
+            tooltip={inputTooltips.ccProcessingFees}
           />
           <PercentInput
-            label="Staffing Costs"
-            value={inputs.staffingCosts}
-            onChange={(v) => onInputChange('staffingCosts', v)}
+            label="Inference Costs"
+            value={inputs.inferenceCosts}
+            onChange={(v) => onInputChange('inferenceCosts', v)}
             max={0.5}
-          />
-          <PercentInput
-            label="Office/Equipment"
-            value={inputs.officeSupplies}
-            onChange={(v) => onInputChange('officeSupplies', v)}
-            max={0.2}
-          />
-          <PercentInput
-            label="Business Insurance"
-            value={inputs.businessInsurance}
-            onChange={(v) => onInputChange('businessInsurance', v)}
-            max={0.1}
-          />
-          <PercentInput
-            label="Inventory Costs"
-            value={inputs.inventoryCosts}
-            onChange={(v) => onInputChange('inventoryCosts', v)}
-            max={0.5}
+            tooltip={inputTooltips.inferenceCosts}
           />
           <PercentInput
             label="Delivery Costs"
             value={inputs.deliveryCosts}
             onChange={(v) => onInputChange('deliveryCosts', v)}
             max={0.3}
+            tooltip={inputTooltips.deliveryCosts}
+          />
+          <PercentInput
+            label="Inventory Costs"
+            value={inputs.inventoryCosts}
+            onChange={(v) => onInputChange('inventoryCosts', v)}
+            max={0.5}
+            tooltip={inputTooltips.inventoryCosts}
+          />
+        </div>
+        {/* Calculated Gross Margin Display */}
+        <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex justify-between items-center">
+            <label className="text-sm font-medium text-gray-700 flex items-center gap-1.5">
+              Gross Margin (Calculated)
+              <Tooltip content={inputTooltips.grossMargin}>
+                <InfoIcon />
+              </Tooltip>
+            </label>
+            <span className={`text-lg font-bold font-mono ${calculateGrossMargin(inputs) >= 0.75 ? 'text-brand-600' : 'text-amber-600'}`}>
+              {formatPercent(calculateGrossMargin(inputs))}
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 mt-1">
+            = 100% − (CC Fees + Inference + Delivery + Inventory)
+          </p>
+          {calculateGrossMargin(inputs) < 0.75 && (
+            <p className="text-xs text-amber-600 mt-1 font-medium">
+              ⚠️ Below SaaS benchmark (75%+). Consider optimizing COGS.
+            </p>
+          )}
+        </div>
+      </CollapsibleSection>
+
+      {/* Operating Expenses */}
+      <CollapsibleSection title="Operating Expenses" defaultOpen={false}>
+        <div className="grid grid-cols-2 gap-4">
+          <PercentInput
+            label="Staffing Costs"
+            value={inputs.staffingCosts}
+            onChange={(v) => onInputChange('staffingCosts', v)}
+            max={0.5}
+            tooltip={inputTooltips.staffingCosts}
+          />
+          <PercentInput
+            label="Office/Equipment"
+            value={inputs.officeSupplies}
+            onChange={(v) => onInputChange('officeSupplies', v)}
+            max={0.2}
+            tooltip={inputTooltips.officeSupplies}
+          />
+          <PercentInput
+            label="Business Insurance"
+            value={inputs.businessInsurance}
+            onChange={(v) => onInputChange('businessInsurance', v)}
+            max={0.1}
+            tooltip={inputTooltips.businessInsurance}
           />
         </div>
         <div className="mt-4">
@@ -333,6 +407,7 @@ export default function InputPanel({ inputs, onInputChange }) {
             max={50000}
             step={100}
             prefix="$"
+            tooltip={inputTooltips.rent}
           />
         </div>
       </CollapsibleSection>
