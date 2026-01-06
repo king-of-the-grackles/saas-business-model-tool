@@ -4,7 +4,7 @@ import { inputTooltips } from '../utils/benchmarkComparison';
 import Tooltip, { InfoIcon } from './Tooltip';
 import TierManager from './TierManager';
 
-function CollapsibleSection({ title, children, defaultOpen = true }) {
+function CollapsibleSection({ title, subtitle, children, defaultOpen = true }) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const contentRef = useRef(null);
   const [height, setHeight] = useState(defaultOpen ? 'auto' : '0px');
@@ -21,7 +21,10 @@ function CollapsibleSection({ title, children, defaultOpen = true }) {
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between group mb-4"
       >
-        <h3 className="section-header group-hover:text-brand-600 transition-colors">{title}</h3>
+        <div>
+          <h3 className="section-header group-hover:text-brand-600 transition-colors text-left">{title}</h3>
+          {subtitle && <p className="text-xs text-gray-400 text-left">{subtitle}</p>}
+        </div>
         <svg
           className={`w-5 h-5 text-gray-400 group-hover:text-brand-500 transition-all duration-300 ${isOpen ? 'rotate-180' : ''}`}
           fill="none"
@@ -318,7 +321,7 @@ export default function InputPanel({ inputs, onInputChange }) {
       </CollapsibleSection>
 
       {/* COGS - Cost of Goods Sold */}
-      <CollapsibleSection title="COGS (Cost of Goods Sold)" defaultOpen={false}>
+      <CollapsibleSection title="COGS (Cost of Goods Sold)" subtitle="% of monthly revenue" defaultOpen={false}>
         <div className="grid grid-cols-2 gap-4">
           <PercentInput
             label="CC Fees"
@@ -352,7 +355,7 @@ export default function InputPanel({ inputs, onInputChange }) {
       </CollapsibleSection>
 
       {/* Operating Expenses */}
-      <CollapsibleSection title="Operating Expenses" defaultOpen={false}>
+      <CollapsibleSection title="Operating Expenses" subtitle="% of monthly revenue (except rent)" defaultOpen={false}>
         <div className="grid grid-cols-2 gap-4">
           <PercentInput
             label="Staffing Costs"
