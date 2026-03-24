@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { formatCurrency, formatPercent, formatNumber, calculateCACFromAdSpend } from '../utils/calculations';
+import { formatCurrency, formatPercent, formatNumber, calculateCACFromAdSpend, calculateCostPerSession, MODEL_PRESETS } from '../utils/calculations';
 import { inputTooltips } from '../utils/benchmarkComparison';
 import Tooltip, { InfoIcon } from './Tooltip';
 import TierManager from './TierManager';
@@ -320,8 +320,191 @@ export default function InputPanel({ inputs, onInputChange }) {
         />
       </CollapsibleSection>
 
+      {/* Agentic Unit Economics */}
+      <CollapsibleSection
+        title="Agentic Unit Economics"
+        subtitle={inputs.agenticCostEnabled ? `$${(calculateCostPerSession(inputs).total).toFixed(4)}/session` : 'Disabled — using % of revenue'}
+        defaultOpen={false}
+      >
+        {/* Enable toggle */}
+        <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+          <div>
+            <span className="text-sm font-medium text-gray-700">Per-session cost model</span>
+            <p className="text-xs text-gray-400">Replaces flat % inference cost with token-level economics</p>
+          </div>
+          <button
+            onClick={() => onInputChange('agenticCostEnabled', !inputs.agenticCostEnabled)}
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${inputs.agenticCostEnabled ? 'bg-accent-600' : 'bg-gray-300'}`}
+          >
+            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${inputs.agenticCostEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+          </button>
+        </div>
+
+        {inputs.agenticCostEnabled && (
+          <>
+            {/* Model Preset Cards */}
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">LLM Model</label>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(MODEL_PRESETS).filter(([k]) => k !== 'custom').map(([key, preset]) => {
+                  const isActive = inputs.modelPreset === key;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        const updates = { modelPreset: key };
+                        if (preset.inputTokenPrice !== null) {
+                          updates.inputTokenPrice = preset.inputTokenPrice;
+                          updates.outputTokenPrice = preset.outputTokenPrice;
+                          updates.cachedInputPrice = preset.cachedInputPrice;
+                        }
+                        Object.entries(updates).forEach(([k, v]) => onInputChange(k, v));
+                      }}
+                      className={`p-2.5 rounded-lg border text-left transition-all ${
+                        isActive
+                          ? 'border-accent-500 bg-accent-50 ring-1 ring-accent-500/30'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="text-xs font-semibold text-gray-800">{preset.name}</div>
+                      <div className="text-xs text-gray-500 font-mono mt-0.5">
+                        ${preset.inputTokenPrice} / ${preset.outputTokenPrice}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Token Economics (Layer 0) */}
+            <div className="mb-4 pb-4 border-b border-gray-100">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Token Pricing ($/1M tokens)</label>
+              <div className="grid grid-cols-3 gap-3">
+                <NumberInput
+                  label="Input"
+                  value={inputs.inputTokenPrice}
+                  onChange={(v) => onInputChange('inputTokenPrice', v)}
+                  min={0} max={100} step={0.1}
+                  prefix="$"
+                />
+                <NumberInput
+                  label="Output"
+                  value={inputs.outputTokenPrice}
+                  onChange={(v) => onInputChange('outputTokenPrice', v)}
+                  min={0} max={500} step={0.5}
+                  prefix="$"
+                />
+                <NumberInput
+                  label="Cached"
+                  value={inputs.cachedInputPrice}
+                  onChange={(v) => onInputChange('cachedInputPrice', v)}
+                  min={0} max={50} step={0.01}
+                  prefix="$"
+                />
+              </div>
+            </div>
+
+            {/* Per-Call Metrics (Layer 1) */}
+            <div className="mb-4 pb-4 border-b border-gray-100">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Per LLM Call</label>
+              <div className="grid grid-cols-2 gap-3">
+                <NumberInput
+                  label="Input tokens/call"
+                  value={inputs.avgInputTokensPerCall}
+                  onChange={(v) => onInputChange('avgInputTokensPerCall', v)}
+                  min={100} max={500000} step={500}
+                />
+                <NumberInput
+                  label="Output tokens/call"
+                  value={inputs.avgOutputTokensPerCall}
+                  onChange={(v) => onInputChange('avgOutputTokensPerCall', v)}
+                  min={1} max={50000} step={10}
+                />
+              </div>
+              <SliderInput
+                label="Cache Hit Rate"
+                value={inputs.cacheHitRate}
+                onChange={(v) => onInputChange('cacheHitRate', v)}
+                min={0} max={1} step={0.01}
+                format="percent"
+                hint="% of input tokens served from prompt cache"
+              />
+            </div>
+
+            {/* Session Metrics (Layer 2) */}
+            <div className="mb-4 pb-4 border-b border-gray-100">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Per Session</label>
+              <NumberInput
+                label="LLM calls per session"
+                value={inputs.avgLLMCallsPerSession}
+                onChange={(v) => onInputChange('avgLLMCallsPerSession', v)}
+                min={1} max={50} step={0.1}
+              />
+              <NumberInput
+                label="Avg session duration (seconds)"
+                value={inputs.avgSessionDuration}
+                onChange={(v) => onInputChange('avgSessionDuration', v)}
+                min={1} max={600} step={1}
+                suffix="s"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <NumberInput
+                  label="Tool calls/session"
+                  value={inputs.avgToolCallsPerSession}
+                  onChange={(v) => onInputChange('avgToolCallsPerSession', v)}
+                  min={0} max={50} step={0.1}
+                />
+                <NumberInput
+                  label="% paid tools"
+                  value={inputs.paidToolCallPct * 100}
+                  onChange={(v) => onInputChange('paidToolCallPct', v / 100)}
+                  min={0} max={100} step={1}
+                  suffix="%"
+                />
+              </div>
+              <NumberInput
+                label="Cost per paid tool call"
+                value={inputs.avgCostPerPaidToolCall}
+                onChange={(v) => onInputChange('avgCostPerPaidToolCall', v)}
+                min={0} max={1} step={0.001}
+                prefix="$"
+              />
+            </div>
+
+            {/* Computed Cost Breakdown */}
+            {(() => {
+              const perSession = calculateCostPerSession(inputs);
+              const total = perSession.total;
+              const llmPct = total > 0 ? (perSession.llm / total * 100) : 0;
+              const infraPct = total > 0 ? (perSession.infra / total * 100) : 0;
+              const toolsPct = total > 0 ? (perSession.tools / total * 100) : 0;
+
+              return (
+                <div className="p-3 bg-brand-50 rounded-lg border border-brand-200">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-semibold text-brand-800">Cost per Session</span>
+                    <span className="text-lg font-bold font-mono text-brand-700">${total.toFixed(4)}</span>
+                  </div>
+                  {/* Stacked bar */}
+                  <div className="flex h-3 rounded-full overflow-hidden mb-2">
+                    <div style={{ width: `${llmPct}%` }} className="bg-red-400" title={`LLM: ${llmPct.toFixed(0)}%`} />
+                    <div style={{ width: `${infraPct}%` }} className="bg-teal-400" title={`Infra: ${infraPct.toFixed(0)}%`} />
+                    <div style={{ width: `${toolsPct}%` }} className="bg-purple-400" title={`Tools: ${toolsPct.toFixed(0)}%`} />
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-600">
+                    <span><span className="inline-block w-2 h-2 rounded-full bg-red-400 mr-1" />LLM ${perSession.llm.toFixed(4)}</span>
+                    <span><span className="inline-block w-2 h-2 rounded-full bg-teal-400 mr-1" />Infra ${perSession.infra.toFixed(4)}</span>
+                    <span><span className="inline-block w-2 h-2 rounded-full bg-purple-400 mr-1" />Tools ${perSession.tools.toFixed(4)}</span>
+                  </div>
+                </div>
+              );
+            })()}
+          </>
+        )}
+      </CollapsibleSection>
+
       {/* COGS - Cost of Goods Sold */}
-      <CollapsibleSection title="COGS (Cost of Goods Sold)" subtitle="% of monthly revenue" defaultOpen={false}>
+      <CollapsibleSection title="COGS (Cost of Goods Sold)" subtitle={inputs.agenticCostEnabled ? 'Per-session costs above + CC fees' : '% of monthly revenue'} defaultOpen={false}>
         <div className="grid grid-cols-2 gap-4">
           <PercentInput
             label="CC Fees"

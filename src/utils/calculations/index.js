@@ -1,7 +1,7 @@
 // Backward-compatible re-exports
 // All existing imports from '../utils/calculations' continue to work unchanged.
 
-export { DEFAULT_INPUTS } from './defaults.js';
+export { DEFAULT_INPUTS, MODEL_PRESETS } from './defaults.js';
 export { formatCurrency, formatPercent, formatNumber } from './formatters.js';
 export {
   calculateCAGR, calculateACL, calculateLTV, calculateCACPayback,
@@ -10,7 +10,7 @@ export {
 } from './unitEconomics.js';
 export { calculateSummaryMetrics, calculateYearlySummaries } from './summaryMetrics.js';
 export { calculateMonthlyProjections } from './projections.js';
-export { calculateMonthlyCosts } from './costModel.js';
+export { calculateMonthlyCosts, calculateCostPerSession } from './costModel.js';
 export { calculateMonthlyRevenue } from './revenueModel.js';
 export { calculateMonthlyTraffic } from './trafficModel.js';
 export { calculateMonthlyCustomers } from './customerModel.js';

@@ -17,8 +17,9 @@ export function calculateMonthlyProjections(inputs) {
     const traffic = calculateMonthlyTraffic(inputs, i);
     const customers = calculateMonthlyCustomers(inputs, i, previousRetained, conversionRate);
     const grossRevenue = calculateMonthlyRevenue(inputs, customers.totalRetained);
-    const { costs, totalOperatingCosts } = calculateMonthlyCosts(inputs, grossRevenue, {
+    const { costs, totalOperatingCosts, perSessionCost, totalSessions } = calculateMonthlyCosts(inputs, grossRevenue, {
       paidConversions: customers.paidConversions,
+      totalRetained: customers.totalRetained,
       cac,
     });
 
@@ -33,6 +34,8 @@ export function calculateMonthlyProjections(inputs) {
       totalOperatingCosts,
       netProfit,
       netProfitMargin,
+      perSessionCost,
+      totalSessions,
     });
 
     previousRetained = customers.totalRetained;
