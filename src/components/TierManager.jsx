@@ -245,7 +245,7 @@ function TierRow({ tier, onUpdate, onDelete, onToggleLock, canDelete, showLockTo
 
       {/* Inline margin bar */}
       {agenticEnabled && costPerSession > 0 && (
-        <div className="mt-2 pt-2 border-t border-gray-100">
+        <div className="mt-2.5 pt-2.5 border-t border-gray-100">
           {(() => {
             const sessions = tier.sessionsPerMonth || 0;
             const cogs = sessions * costPerSession;
@@ -254,18 +254,22 @@ function TierRow({ tier, onUpdate, onDelete, onToggleLock, canDelete, showLockTo
             const margin = revenue > 0 ? (profit / revenue) : (cogs > 0 ? -1 : 0);
             const marginPct = Math.max(0, Math.min(100, margin * 100));
             const barColor = margin < 0 ? 'bg-red-400' : margin < 0.5 ? 'bg-amber-400' : margin < 0.75 ? 'bg-emerald-400' : 'bg-teal-500';
+            const textColor = margin < 0 ? 'text-red-600' : margin < 0.5 ? 'text-amber-600' : 'text-emerald-600';
 
             return (
               <>
-                <div className="flex h-1.5 rounded-full overflow-hidden bg-gray-100">
-                  <div style={{ width: `${marginPct}%` }} className={`${barColor} transition-all duration-300`} />
-                </div>
-                <div className="flex justify-between text-xs mt-1">
-                  <span className="text-gray-500">
-                    Rev: {formatCurrency(revenue)} | COGS: {formatCurrency(Math.round(cogs))}
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className="flex-1 h-2 rounded-full overflow-hidden bg-gray-100">
+                    <div style={{ width: `${marginPct}%` }} className={`h-full ${barColor} rounded-full transition-all duration-300`} />
+                  </div>
+                  <span className={`text-xs font-mono font-bold ${textColor} whitespace-nowrap`}>
+                    {margin < 0 ? `−∞%` : formatPercent(margin)}
                   </span>
-                  <span className={`font-mono font-medium ${margin < 0 ? 'text-red-500' : margin < 0.5 ? 'text-amber-600' : 'text-emerald-600'}`}>
-                    {margin < 0 ? `−${formatCurrency(Math.abs(profit))}` : formatPercent(margin)} margin
+                </div>
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>Rev {formatCurrency(revenue)} · COGS {formatCurrency(Math.round(cogs))}</span>
+                  <span className={`font-mono ${textColor}`}>
+                    {margin < 0 ? `−${formatCurrency(Math.abs(profit))}/mo` : `+${formatCurrency(Math.round(profit))}/mo`}
                   </span>
                 </div>
               </>

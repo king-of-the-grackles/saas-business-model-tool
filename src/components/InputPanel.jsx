@@ -367,12 +367,43 @@ export default function InputPanel({ inputs, onInputChange }) {
 
         {inputs.agenticCostEnabled && (
           <>
-            {/* Model Preset Cards */}
+            {/* Cost Breakdown — FIRST, the payoff. Updates live as levers change below. */}
+            {(() => {
+              const perSession = calculateCostPerSession(inputs);
+              const total = perSession.total;
+              const llmPct = total > 0 ? (perSession.llm / total * 100) : 0;
+              const infraPct = total > 0 ? (perSession.infra / total * 100) : 0;
+              const toolsPct = total > 0 ? (perSession.tools / total * 100) : 0;
+
+              return (
+                <div className="p-3 mb-4 bg-brand-50 rounded-lg border border-brand-200">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-semibold text-brand-800">Cost per Session</span>
+                    <span className="text-lg font-bold font-mono text-brand-700">${total.toFixed(4)}</span>
+                  </div>
+                  <div className="flex h-2.5 rounded-full overflow-hidden mb-2">
+                    <div style={{ width: `${llmPct}%` }} className="bg-red-400 transition-all duration-300" title={`LLM: ${llmPct.toFixed(0)}%`} />
+                    <div style={{ width: `${infraPct}%` }} className="bg-teal-400 transition-all duration-300" title={`Infra: ${infraPct.toFixed(0)}%`} />
+                    <div style={{ width: `${toolsPct}%` }} className="bg-purple-400 transition-all duration-300" title={`Tools: ${toolsPct.toFixed(0)}%`} />
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-600">
+                    <span><span className="inline-block w-2 h-2 rounded-full bg-red-400 mr-1" />LLM ${perSession.llm.toFixed(4)}</span>
+                    <span><span className="inline-block w-2 h-2 rounded-full bg-teal-400 mr-1" />Infra ${perSession.infra.toFixed(4)}</span>
+                    <span><span className="inline-block w-2 h-2 rounded-full bg-purple-400 mr-1" />Tools ${perSession.tools.toFixed(4)}</span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Model Preset Cards — with $/session estimate */}
             <div className="mb-4">
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">LLM Model</label>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(MODEL_PRESETS).filter(([k]) => k !== 'custom').map(([key, preset]) => {
                   const isActive = inputs.modelPreset === key;
+                  // Compute estimated $/session for this preset
+                  const estInputs = { ...inputs, inputTokenPrice: preset.inputTokenPrice, outputTokenPrice: preset.outputTokenPrice, cachedInputPrice: preset.cachedInputPrice };
+                  const estCost = calculateCostPerSession(estInputs).total;
                   return (
                     <button
                       key={key}
@@ -394,6 +425,9 @@ export default function InputPanel({ inputs, onInputChange }) {
                       <div className="text-xs font-semibold text-gray-800">{preset.name}</div>
                       <div className="text-xs text-gray-500 font-mono mt-0.5">
                         ${preset.inputTokenPrice} / ${preset.outputTokenPrice}
+                      </div>
+                      <div className={`text-xs font-mono mt-1 ${isActive ? 'text-accent-700 font-semibold' : 'text-gray-400'}`}>
+                        ~${estCost.toFixed(3)}/sess
                       </div>
                     </button>
                   );
@@ -457,7 +491,7 @@ export default function InputPanel({ inputs, onInputChange }) {
             </div>
 
             {/* Session Metrics (Layer 2) */}
-            <div className="mb-4 pb-4 border-b border-gray-100">
+            <div className="mb-4">
               <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Per Session</label>
               <NumberInput
                 label="LLM calls per session"
@@ -495,35 +529,6 @@ export default function InputPanel({ inputs, onInputChange }) {
                 prefix="$"
               />
             </div>
-
-            {/* Computed Cost Breakdown */}
-            {(() => {
-              const perSession = calculateCostPerSession(inputs);
-              const total = perSession.total;
-              const llmPct = total > 0 ? (perSession.llm / total * 100) : 0;
-              const infraPct = total > 0 ? (perSession.infra / total * 100) : 0;
-              const toolsPct = total > 0 ? (perSession.tools / total * 100) : 0;
-
-              return (
-                <div className="p-3 bg-brand-50 rounded-lg border border-brand-200">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-semibold text-brand-800">Cost per Session</span>
-                    <span className="text-lg font-bold font-mono text-brand-700">${total.toFixed(4)}</span>
-                  </div>
-                  {/* Stacked bar */}
-                  <div className="flex h-3 rounded-full overflow-hidden mb-2">
-                    <div style={{ width: `${llmPct}%` }} className="bg-red-400" title={`LLM: ${llmPct.toFixed(0)}%`} />
-                    <div style={{ width: `${infraPct}%` }} className="bg-teal-400" title={`Infra: ${infraPct.toFixed(0)}%`} />
-                    <div style={{ width: `${toolsPct}%` }} className="bg-purple-400" title={`Tools: ${toolsPct.toFixed(0)}%`} />
-                  </div>
-                  <div className="flex justify-between text-xs text-gray-600">
-                    <span><span className="inline-block w-2 h-2 rounded-full bg-red-400 mr-1" />LLM ${perSession.llm.toFixed(4)}</span>
-                    <span><span className="inline-block w-2 h-2 rounded-full bg-teal-400 mr-1" />Infra ${perSession.infra.toFixed(4)}</span>
-                    <span><span className="inline-block w-2 h-2 rounded-full bg-purple-400 mr-1" />Tools ${perSession.tools.toFixed(4)}</span>
-                  </div>
-                </div>
-              );
-            })()}
           </>
         )}
       </CollapsibleSection>
