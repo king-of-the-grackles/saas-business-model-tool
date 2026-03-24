@@ -11,7 +11,7 @@ export {
 export { calculateSummaryMetrics, calculateYearlySummaries } from './summaryMetrics.js';
 export { calculateMonthlyProjections } from './projections.js';
 export { calculateMonthlyCosts, calculateCostPerSession } from './costModel.js';
-export { calculateMonthlyRevenue } from './revenueModel.js';
+export { calculateMonthlyRevenue, PRICING_MODELS } from './revenueModel.js';
 export { calculateMonthlyTraffic } from './trafficModel.js';
 export { calculateMonthlyCustomers } from './customerModel.js';
 

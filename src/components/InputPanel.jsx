@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { formatCurrency, formatPercent, formatNumber, calculateCACFromAdSpend, calculateCostPerSession, MODEL_PRESETS } from '../utils/calculations';
+import { formatCurrency, formatPercent, formatNumber, calculateCACFromAdSpend, calculateCostPerSession, MODEL_PRESETS, PRICING_MODELS } from '../utils/calculations';
 import { inputTooltips } from '../utils/benchmarkComparison';
 import Tooltip, { InfoIcon } from './Tooltip';
 import TierManager from './TierManager';
@@ -313,10 +313,35 @@ export default function InputPanel({ inputs, onInputChange }) {
       </CollapsibleSection>
 
       {/* Pricing */}
-      <CollapsibleSection title="Pricing" defaultOpen={false}>
+      <CollapsibleSection title="Pricing & Packaging" defaultOpen={false}>
+        {/* Pricing model selector */}
+        {inputs.agenticCostEnabled && (
+          <div className="mb-4">
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Pricing Model</label>
+            <div className="grid grid-cols-2 gap-1.5">
+              {PRICING_MODELS.map(model => (
+                <button
+                  key={model.key}
+                  onClick={() => onInputChange('pricingModel', model.key)}
+                  className={`p-2 rounded-lg border text-left transition-all ${
+                    inputs.pricingModel === model.key
+                      ? 'border-accent-500 bg-accent-50 ring-1 ring-accent-500/30'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="text-xs font-semibold text-gray-800">{model.name}</div>
+                  <div className="text-xs text-gray-400 leading-tight">{model.description}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <TierManager
           tiers={inputs.pricingTiers}
           onTiersChange={(newTiers) => onInputChange('pricingTiers', newTiers)}
+          costPerSession={inputs.agenticCostEnabled ? calculateCostPerSession(inputs).total : 0}
+          agenticEnabled={inputs.agenticCostEnabled}
+          pricingModel={inputs.pricingModel || 'flat'}
         />
       </CollapsibleSection>
 

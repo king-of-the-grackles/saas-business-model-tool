@@ -22,6 +22,7 @@ export const DEFAULT_INPUTS = {
   inferenceCosts: 0,
   rent: 0,
   organicTraffic: 500,
+  pricingModel: 'flat',             // flat | credit | usage | hybrid
 
   // ── Agentic Cost Model ──────────────────────────────────────────
   // Enable to switch from % of revenue COGS to per-session cost model

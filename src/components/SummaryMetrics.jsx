@@ -1,4 +1,4 @@
-import { formatCurrency, formatPercent, formatNumber } from '../utils/calculations';
+import { formatCurrency, formatPercent, formatNumber, calculateCostPerSession } from '../utils/calculations';
 import {
   getLtvCacStatus,
   getCacPaybackStatus,
@@ -274,6 +274,51 @@ export default function SummaryMetrics({ results }) {
           />
         </div>
       </div>
+
+      {/* Agentic Session Economics - shown when enabled */}
+      {inputs.agenticCostEnabled && (() => {
+        const perSession = calculateCostPerSession(inputs);
+        const total = perSession.total;
+        const weightedSessions = inputs.pricingTiers.reduce((sum, t) => sum + ((t.sessionsPerMonth || 0) * (t.distribution || 0)), 0);
+        const weightedCogs = weightedSessions * total;
+        const sessionGrossMargin = arpu > 0 ? (arpu - weightedCogs) / arpu : 0;
+
+        return (
+          <div className="mb-6">
+            <h3 className="section-header mb-3">Session Economics</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <SecondaryMetricCard
+                label="Cost/Session"
+                value={'$' + total.toFixed(4)}
+                subtext={`LLM $${perSession.llm.toFixed(3)} · Infra $${perSession.infra.toFixed(3)} · Tools $${perSession.tools.toFixed(3)}`}
+                highlight
+                tooltip="All-in cost per agent session: LLM inference + infrastructure compute + third-party tool calls"
+              />
+              <SecondaryMetricCard
+                label="Weighted COGS/User"
+                value={formatCurrency(Math.round(weightedCogs))}
+                subtext={`${formatNumber(Math.round(weightedSessions))} sessions × $${total.toFixed(3)}`}
+                tooltip="Average monthly COGS per user, weighted by tier distribution and sessions per month"
+              />
+              <SecondaryMetricCard
+                label="Session Margin"
+                value={formatPercent(sessionGrossMargin)}
+                subtext={sessionGrossMargin < 0.5 ? 'Below 50% — review pricing' : sessionGrossMargin < 0.75 ? 'Adequate' : 'Healthy'}
+                success={sessionGrossMargin >= 0.75}
+                highlight={sessionGrossMargin >= 0.5 && sessionGrossMargin < 0.75}
+                warning={sessionGrossMargin < 0.5}
+                tooltip="Gross margin after session-driven COGS. (ARPU - weighted COGS) / ARPU. Target 75%+ for SaaS."
+              />
+              <SecondaryMetricCard
+                label="Sessions to Payback"
+                value={total > 0 ? formatNumber(Math.round(cac / (arpu / weightedSessions - total))) + ' sess' : '∞'}
+                subtext="Sessions to recover CAC"
+                tooltip="How many sessions a customer needs to generate before their gross profit covers the cost of acquiring them"
+              />
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Growth Metrics - Tertiary Tier */}
       <div>
