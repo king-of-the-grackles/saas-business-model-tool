@@ -17,47 +17,47 @@ export const DEFAULT_INPUTS = {
   staffingCosts: 0.15,
   officeSupplies: 0.02,
   businessInsurance: 0.01,
-  inventoryCosts: 0,
-  deliveryCosts: 0,
-  inferenceCosts: 0,
   rent: 0,
   organicTraffic: 500,
   pricingModel: 'flat',             // flat | credit | usage | hybrid
 
-  // ── Agentic Cost Model ──────────────────────────────────────────
-  // Enable to switch from % of revenue COGS to per-session cost model
-  agenticCostEnabled: false,
+  // ── Session Cost Model (Token → LLM Call → Session) ─────────────
 
   // Layer 0: Token Economics
-  modelPreset: 'sonnet4',              // Model selector key
+  modelPreset: 'sonnet46',              // Model selector key
   inputTokenPrice: 3.00,               // $/1M input tokens
   outputTokenPrice: 15.00,             // $/1M output tokens
-  cachedInputPrice: 0.30,              // $/1M cached input tokens (typically 10% of input)
+  cachedInputPrice: 0.30,              // $/1M cached input tokens
 
   // Layer 1: Per-LLM-Call
-  avgInputTokensPerCall: 16250,        // From Braintrust data: ~16.25K avg
-  avgOutputTokensPerCall: 80,          // From Braintrust data: very low output
-  cacheHitRate: 0.78,                  // 78% of input tokens served from cache
-  avgLLMCallsPerSession: 2.8,          // From data: ~243 calls / 87 sessions
+  avgInputTokensPerCall: 49150,        // From Braintrust data: Mar 2026
+  avgOutputTokensPerCall: 1316,         // From API billing data (Braintrust underreports — only counts final text, not tool calls)
+  cacheHitRate: 0.63,                  // 63% of input tokens served from cache
+  avgLLMCallsPerSession: 3.6,          // From Braintrust data: Mar 2026
 
   // Layer 2: Infrastructure
-  avgSessionDuration: 73,              // Seconds — from Braintrust data
+  avgSessionDuration: 19,              // Seconds — from Braintrust data
   vCPUsPerVM: 8,
   ramGBPerVM: 8,
   cpuCostPerHour: 0.07,               // $/CPU-hr (Fly.io Sprites)
   memoryCostPerHour: 0.04375,          // $/GB-hr
 
   // Layer 2: Third-Party Tools
-  avgToolCallsPerSession: 3.9,         // From data: all tool invocations per session
-  paidToolCallPct: 0.16,               // 16% of calls are paid (Firecrawl)
-  avgCostPerPaidToolCall: 0.008,       // ~$0.008 avg Firecrawl call
+  avgToolCallsPerSession: 2.6,         // From Braintrust data: Mar 2026
+  paidToolCallPct: 0.21,               // 21% of calls are paid (Firecrawl, BrightData)
+  avgCostPerPaidToolCall: 0.007,       // ~$0.007 avg paid tool call
 };
 
 // Model presets — auto-fill token prices when selected
 export const MODEL_PRESETS = {
-  sonnet4:  { name: 'Claude Sonnet 4',  inputTokenPrice: 3.00,  outputTokenPrice: 15.00, cachedInputPrice: 0.30 },
-  haiku4:   { name: 'Claude Haiku 4',   inputTokenPrice: 0.80,  outputTokenPrice: 4.00,  cachedInputPrice: 0.08 },
-  opus4:    { name: 'Claude Opus 4',    inputTokenPrice: 15.00, outputTokenPrice: 75.00, cachedInputPrice: 1.50 },
-  gpt4o:    { name: 'GPT-4o',           inputTokenPrice: 2.50,  outputTokenPrice: 10.00, cachedInputPrice: 1.25 },
-  custom:   { name: 'Custom',           inputTokenPrice: null,  outputTokenPrice: null,  cachedInputPrice: null },
+  // Claude 4.6 family (latest)
+  sonnet46:   { name: 'Claude Sonnet 4.6',  inputTokenPrice: 3.00,  outputTokenPrice: 15.00,  cachedInputPrice: 0.30 },
+  haiku45:    { name: 'Claude Haiku 4.5',    inputTokenPrice: 1.00,  outputTokenPrice: 5.00,   cachedInputPrice: 0.10 },
+  opus46:     { name: 'Claude Opus 4.6',     inputTokenPrice: 5.00,  outputTokenPrice: 25.00,  cachedInputPrice: 0.50 },
+  // OpenAI GPT-5.4 family (latest)
+  gpt54:      { name: 'GPT-5.4',            inputTokenPrice: 2.50,  outputTokenPrice: 15.00,  cachedInputPrice: 0.25 },
+  gpt54mini:  { name: 'GPT-5.4 mini',       inputTokenPrice: 0.75,  outputTokenPrice: 4.50,   cachedInputPrice: 0.075 },
+  gpt54nano:  { name: 'GPT-5.4 nano',       inputTokenPrice: 0.20,  outputTokenPrice: 1.25,   cachedInputPrice: 0.02 },
+  // Custom
+  custom:     { name: 'Custom',             inputTokenPrice: null,  outputTokenPrice: null,   cachedInputPrice: null },
 };

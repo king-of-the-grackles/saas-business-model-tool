@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { formatCurrency, formatPercent, formatNumber, calculateCACFromAdSpend, calculateCostPerSession, MODEL_PRESETS, PRICING_MODELS } from '../utils/calculations';
 import { inputTooltips } from '../utils/benchmarkComparison';
 import Tooltip, { InfoIcon } from './Tooltip';
@@ -182,10 +182,100 @@ function PercentInput({ label, value, onChange, min = 0, max = 1, step = 0.001, 
   );
 }
 
+function formatInputsForClipboard(inputs) {
+  const preset = MODEL_PRESETS[inputs.modelPreset];
+  const modelName = preset ? preset.name : inputs.modelPreset;
+  const cac = calculateCACFromAdSpend(inputs.monthlyAdSpend, inputs.startingPaidTraffic, inputs.conversionRate);
+  const paidCustomers = Math.round(inputs.startingPaidTraffic * inputs.conversionRate);
+  const perSession = calculateCostPerSession(inputs);
+
+  const tiers = inputs.pricingTiers
+    .map(t => `  - ${t.name}: $${t.monthlyPrice}/mo (${(t.distribution * 100).toFixed(0)}% of customers, ${t.sessionsPerMonth} sessions/mo)`)
+    .join('\n');
+
+  let text = `SaaS Business Model Assumptions
+================================
+
+Target
+- Min Success Criteria (Net Profit FY3): ${formatCurrency(inputs.minimumSuccessCriteria)}
+
+Traffic & Acquisition
+- Starting Monthly Paid Traffic: ${formatNumber(inputs.startingPaidTraffic)} visitors
+- Monthly Traffic Growth Rate: ${(inputs.monthlyGrowthRate * 100).toFixed(1)}%
+- Organic Traffic: ${formatNumber(inputs.organicTraffic)}/mo
+- Conversion Rate: ${(inputs.conversionRate * 100).toFixed(1)}%
+- Monthly Ad Spend: ${formatCurrency(inputs.monthlyAdSpend)}
+- Calculated CAC: ${formatCurrency(cac)} (${formatNumber(paidCustomers)} paid customers/mo)
+
+Retention
+- Customer Referral Rate: ${(inputs.customerReferralRate * 100).toFixed(1)}%
+- Monthly Churn Rate: ${(inputs.monthlyChurn * 100).toFixed(1)}%
+
+Pricing & Packaging
+- Pricing Model: ${inputs.pricingModel}
+- Tiers:
+${tiers}
+
+COGS (% of revenue)
+- CC Processing Fees: ${(inputs.ccProcessingFees * 100).toFixed(1)}%
+- Inference Costs: 0.0%
+- Delivery Costs: 0.0%
+- Inventory Costs: 0.0%
+
+Operating Expenses
+- Staffing: ${(inputs.staffingCosts * 100).toFixed(1)}% of revenue
+- Office/Equipment: ${(inputs.officeSupplies * 100).toFixed(1)}% of revenue
+- Business Insurance: ${(inputs.businessInsurance * 100).toFixed(1)}% of revenue
+- Monthly Rent: ${formatCurrency(inputs.rent)}
+
+Agentic Unit Economics (enabled)
+- LLM Model: ${modelName}
+- Token Pricing (per 1M tokens): Input $${inputs.inputTokenPrice} / Output $${inputs.outputTokenPrice} / Cached $${inputs.cachedInputPrice}
+- Avg Input Tokens/Call: ${formatNumber(inputs.avgInputTokensPerCall)}
+- Avg Output Tokens/Call: ${formatNumber(inputs.avgOutputTokensPerCall)}
+- Cache Hit Rate: ${(inputs.cacheHitRate * 100).toFixed(0)}%
+- LLM Calls/Session: ${inputs.avgLLMCallsPerSession}
+- Avg Session Duration: ${inputs.avgSessionDuration}s
+- Tool Calls/Session: ${inputs.avgToolCallsPerSession}
+- Paid Tool %: ${(inputs.paidToolCallPct * 100).toFixed(0)}%
+- Cost/Paid Tool Call: $${inputs.avgCostPerPaidToolCall}
+- Cost/Session: $${perSession.total.toFixed(4)} (LLM: $${perSession.llm.toFixed(4)}, Infra: $${perSession.infra.toFixed(4)}, Tools: $${perSession.tools.toFixed(4)})`;
+
+  return text;
+}
+
 export default function InputPanel({ inputs, onInputChange }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(async () => {
+    const text = formatInputsForClipboard(inputs);
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [inputs]);
+
   return (
     <div className="card p-6">
-      <h2 className="text-lg font-bold text-brand-800 mb-6">Model Assumptions</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-lg font-bold text-brand-800">Model Assumptions</h2>
+        <button
+          onClick={handleCopy}
+          className={`p-1.5 rounded-md transition-colors ${
+            copied ? 'text-green-500' : 'text-gray-300 hover:text-gray-500'
+          }`}
+          title="Copy all assumptions for LLM context"
+        >
+          {copied ? (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          )}
+        </button>
+      </div>
 
       {/* Target - Always visible */}
       <CollapsibleSection title="Target" defaultOpen={true}>
@@ -315,58 +405,39 @@ export default function InputPanel({ inputs, onInputChange }) {
       {/* Pricing */}
       <CollapsibleSection title="Pricing & Packaging" defaultOpen={false}>
         {/* Pricing model selector */}
-        {inputs.agenticCostEnabled && (
-          <div className="mb-4">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Pricing Model</label>
-            <div className="grid grid-cols-2 gap-1.5">
-              {PRICING_MODELS.map(model => (
-                <button
-                  key={model.key}
-                  onClick={() => onInputChange('pricingModel', model.key)}
-                  className={`p-2 rounded-lg border text-left transition-all ${
-                    inputs.pricingModel === model.key
-                      ? 'border-accent-500 bg-accent-50 ring-1 ring-accent-500/30'
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="text-xs font-semibold text-gray-800">{model.name}</div>
-                  <div className="text-xs text-gray-400 leading-tight">{model.description}</div>
-                </button>
-              ))}
-            </div>
+        <div className="mb-4">
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Pricing Model</label>
+          <div className="grid grid-cols-2 gap-1.5">
+            {PRICING_MODELS.map(model => (
+              <button
+                key={model.key}
+                onClick={() => onInputChange('pricingModel', model.key)}
+                className={`p-2 rounded-lg border text-left transition-all ${
+                  inputs.pricingModel === model.key
+                    ? 'border-accent-500 bg-accent-50 ring-1 ring-accent-500/30'
+                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <div className="text-xs font-semibold text-gray-800">{model.name}</div>
+                <div className="text-xs text-gray-400 leading-tight">{model.description}</div>
+              </button>
+            ))}
           </div>
-        )}
+        </div>
         <TierManager
           tiers={inputs.pricingTiers}
           onTiersChange={(newTiers) => onInputChange('pricingTiers', newTiers)}
-          costPerSession={inputs.agenticCostEnabled ? calculateCostPerSession(inputs).total : 0}
-          agenticEnabled={inputs.agenticCostEnabled}
+          costPerSession={calculateCostPerSession(inputs).total}
           pricingModel={inputs.pricingModel || 'flat'}
         />
       </CollapsibleSection>
 
-      {/* Agentic Unit Economics */}
+      {/* Session Economics */}
       <CollapsibleSection
-        title="Agentic Unit Economics"
-        subtitle={inputs.agenticCostEnabled ? `$${(calculateCostPerSession(inputs).total).toFixed(4)}/session` : 'Disabled — using % of revenue'}
+        title="Session Economics"
+        subtitle={`$${(calculateCostPerSession(inputs).total).toFixed(4)}/session`}
         defaultOpen={false}
       >
-        {/* Enable toggle */}
-        <div className="flex items-center justify-between mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-          <div>
-            <span className="text-sm font-medium text-gray-700">Per-session cost model</span>
-            <p className="text-xs text-gray-400">Replaces flat % inference cost with token-level economics</p>
-          </div>
-          <button
-            onClick={() => onInputChange('agenticCostEnabled', !inputs.agenticCostEnabled)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${inputs.agenticCostEnabled ? 'bg-accent-600' : 'bg-gray-300'}`}
-          >
-            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${inputs.agenticCostEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
-          </button>
-        </div>
-
-        {inputs.agenticCostEnabled && (
-          <>
             {/* Cost Breakdown — FIRST, the payoff. Updates live as levers change below. */}
             {(() => {
               const perSession = calculateCostPerSession(inputs);
@@ -529,42 +600,18 @@ export default function InputPanel({ inputs, onInputChange }) {
                 prefix="$"
               />
             </div>
-          </>
-        )}
       </CollapsibleSection>
 
-      {/* COGS - Cost of Goods Sold */}
-      <CollapsibleSection title="COGS (Cost of Goods Sold)" subtitle={inputs.agenticCostEnabled ? 'Per-session costs above + CC fees' : '% of monthly revenue'} defaultOpen={false}>
-        <div className="grid grid-cols-2 gap-4">
-          <PercentInput
-            label="CC Fees"
-            value={inputs.ccProcessingFees}
-            onChange={(v) => onInputChange('ccProcessingFees', v)}
-            max={0.1}
-            tooltip={inputTooltips.ccProcessingFees}
-          />
-          <PercentInput
-            label="Inference Costs"
-            value={inputs.inferenceCosts}
-            onChange={(v) => onInputChange('inferenceCosts', v)}
-            max={0.5}
-            tooltip={inputTooltips.inferenceCosts}
-          />
-          <PercentInput
-            label="Delivery Costs"
-            value={inputs.deliveryCosts}
-            onChange={(v) => onInputChange('deliveryCosts', v)}
-            max={0.3}
-            tooltip={inputTooltips.deliveryCosts}
-          />
-          <PercentInput
-            label="Inventory Costs"
-            value={inputs.inventoryCosts}
-            onChange={(v) => onInputChange('inventoryCosts', v)}
-            max={0.5}
-            tooltip={inputTooltips.inventoryCosts}
-          />
-        </div>
+      {/* COGS - CC Processing Only */}
+      <CollapsibleSection title="COGS" subtitle="CC processing + per-session costs above" defaultOpen={false}>
+        <PercentInput
+          label="CC Processing Fees"
+          value={inputs.ccProcessingFees}
+          onChange={(v) => onInputChange('ccProcessingFees', v)}
+          max={0.1}
+          hint="Stripe/payment processor fee (typically 2.5-2.9%)"
+          tooltip={inputTooltips.ccProcessingFees}
+        />
       </CollapsibleSection>
 
       {/* Operating Expenses */}

@@ -275,8 +275,8 @@ export default function SummaryMetrics({ results }) {
         </div>
       </div>
 
-      {/* Agentic Session Economics - shown when enabled */}
-      {inputs.agenticCostEnabled && (() => {
+      {/* Session Economics */}
+      {(() => {
         const perSession = calculateCostPerSession(inputs);
         const total = perSession.total;
         const weightedSessions = inputs.pricingTiers.reduce((sum, t) => sum + ((t.sessionsPerMonth || 0) * (t.distribution || 0)), 0);

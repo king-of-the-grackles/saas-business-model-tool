@@ -2,7 +2,7 @@
 
 import {
   calculateACL, calculateCAGR, calculateLTV, calculateCACPayback,
-  calculateLTVCACRatio, calculateGrossMargin, calculateARPU,
+  calculateLTVCACRatio, calculateARPU,
   calculateCACFromAdSpend,
 } from './unitEconomics.js';
 import { calculateCostPerSession } from './costModel.js';
@@ -14,19 +14,14 @@ export function calculateSummaryMetrics(inputs) {
   const cac = calculateCACFromAdSpend(inputs.monthlyAdSpend, inputs.startingPaidTraffic, conversionRate);
   const cagr = calculateCAGR(inputs.monthlyGrowthRate);
 
-  // Gross margin: use session-driven COGS when agentic mode is on
-  let grossMargin;
-  if (inputs.agenticCostEnabled) {
-    const perSession = calculateCostPerSession(inputs);
-    const weightedSessions = inputs.pricingTiers.reduce(
-      (sum, t) => sum + ((t.sessionsPerMonth || 0) * (t.distribution || 0)), 0
-    );
-    const weightedCogs = weightedSessions * perSession.total;
-    const ccFees = arpu * (inputs.ccProcessingFees || 0);
-    grossMargin = arpu > 0 ? Math.max(0, (arpu - weightedCogs - ccFees) / arpu) : 0;
-  } else {
-    grossMargin = calculateGrossMargin(inputs);
-  }
+  // Gross margin from per-session COGS + CC fees
+  const perSession = calculateCostPerSession(inputs);
+  const weightedSessions = inputs.pricingTiers.reduce(
+    (sum, t) => sum + ((t.sessionsPerMonth || 0) * (t.distribution || 0)), 0
+  );
+  const weightedCogs = weightedSessions * perSession.total;
+  const ccFees = arpu * (inputs.ccProcessingFees || 0);
+  const grossMargin = arpu > 0 ? Math.max(0, (arpu - weightedCogs - ccFees) / arpu) : 0;
 
   const ltv = calculateLTV(arpu, acl, grossMargin);
   const ltvCacRatio = calculateLTVCACRatio(ltv, cac);

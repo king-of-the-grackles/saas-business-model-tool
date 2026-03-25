@@ -31,13 +31,6 @@ export function calculateLTVCACRatio(ltv, cac) {
   return ltv / cac;
 }
 
-// Gross Margin from COGS inputs (as percentages of revenue)
-export function calculateGrossMargin(inputs) {
-  const cogs = inputs.ccProcessingFees + inputs.inferenceCosts +
-               inputs.deliveryCosts + inputs.inventoryCosts;
-  return Math.max(0, 1 - cogs);
-}
-
 // ARPU weighted by tier distribution
 export function calculateARPU(tiers) {
   if (!tiers || tiers.length === 0) return 0;

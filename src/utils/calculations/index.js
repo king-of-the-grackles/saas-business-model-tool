@@ -5,7 +5,7 @@ export { DEFAULT_INPUTS, MODEL_PRESETS } from './defaults.js';
 export { formatCurrency, formatPercent, formatNumber } from './formatters.js';
 export {
   calculateCAGR, calculateACL, calculateLTV, calculateCACPayback,
-  calculateLTVCACRatio, calculateGrossMargin, calculateARPU,
+  calculateLTVCACRatio, calculateARPU,
   getTotalDistribution, calculateCACFromAdSpend, generateTierId, validateTiers,
 } from './unitEconomics.js';
 export { calculateSummaryMetrics, calculateYearlySummaries } from './summaryMetrics.js';

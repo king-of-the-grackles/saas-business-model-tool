@@ -19,7 +19,7 @@ function UnlockIcon({ className }) {
   );
 }
 
-function TierRow({ tier, onUpdate, onDelete, onToggleLock, canDelete, showLockToggle, costPerSession, agenticEnabled, pricingModel }) {
+function TierRow({ tier, onUpdate, onDelete, onToggleLock, canDelete, showLockToggle, costPerSession, pricingModel }) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState(tier.name);
   const [priceValue, setPriceValue] = useState(tier.monthlyPrice.toString());
@@ -179,21 +179,19 @@ function TierRow({ tier, onUpdate, onDelete, onToggleLock, canDelete, showLockTo
           )}
         </div>
         {/* Sessions per month */}
-        {agenticEnabled && (
-          <div className="flex items-center gap-1">
-            <input
-              type="number"
-              value={tier.sessionsPerMonth || 0}
-              onChange={(e) => onUpdate({ ...tier, sessionsPerMonth: parseInt(e.target.value) || 0 })}
-              className="w-20 px-2 py-1.5 text-sm font-mono border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
-              min="0"
-              step="10"
-            />
-            <span className="text-gray-400 text-sm">sessions/mo</span>
-          </div>
-        )}
+        <div className="flex items-center gap-1">
+          <input
+            type="number"
+            value={tier.sessionsPerMonth || 0}
+            onChange={(e) => onUpdate({ ...tier, sessionsPerMonth: parseInt(e.target.value) || 0 })}
+            className="w-20 px-2 py-1.5 text-sm font-mono border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+            min="0"
+            step="10"
+          />
+          <span className="text-gray-400 text-sm">sessions/mo</span>
+        </div>
         {/* Credit/Hybrid: overage fields */}
-        {agenticEnabled && (pricingModel === 'credit' || pricingModel === 'hybrid') && (
+        {(pricingModel === 'credit' || pricingModel === 'hybrid') && (
           <div className="flex items-center gap-1">
             <input
               type="number"
@@ -217,7 +215,7 @@ function TierRow({ tier, onUpdate, onDelete, onToggleLock, canDelete, showLockTo
           </div>
         )}
         {/* Usage-based: per-session rate + base fee */}
-        {agenticEnabled && pricingModel === 'usage' && (
+        {pricingModel === 'usage' && (
           <div className="flex items-center gap-1">
             <span className="text-gray-400 text-sm">$</span>
             <input
@@ -244,7 +242,7 @@ function TierRow({ tier, onUpdate, onDelete, onToggleLock, canDelete, showLockTo
       </div>
 
       {/* Inline margin bar */}
-      {agenticEnabled && costPerSession > 0 && (
+      {costPerSession > 0 && (
         <div className="mt-2.5 pt-2.5 border-t border-gray-100">
           {(() => {
             const sessions = tier.sessionsPerMonth || 0;
@@ -313,7 +311,7 @@ function redistributeDistribution(tiers, changedTierId, newValue) {
   });
 }
 
-export default function TierManager({ tiers, onTiersChange, costPerSession = 0, agenticEnabled = false, pricingModel = 'flat' }) {
+export default function TierManager({ tiers, onTiersChange, costPerSession = 0, pricingModel = 'flat' }) {
   const handleAddTier = () => {
     // New tier takes 10% from unlocked tiers proportionally
     const unlockedSum = tiers
@@ -425,7 +423,6 @@ export default function TierManager({ tiers, onTiersChange, costPerSession = 0, 
             canDelete={canDelete}
             showLockToggle={showLockToggle}
             costPerSession={costPerSession}
-            agenticEnabled={agenticEnabled}
             pricingModel={pricingModel}
           />
         ))}

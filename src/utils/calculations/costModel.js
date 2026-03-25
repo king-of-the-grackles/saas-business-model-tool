@@ -71,19 +71,14 @@ export function calculateMonthlyCosts(inputs, grossRevenue, context = {}) {
   );
 
   // Compute per-session costs and total monthly sessions from tier usage
-  let perSessionCost = { llm: 0, infra: 0, tools: 0, total: 0 };
+  const perSessionCost = calculateCostPerSession(inputs);
   let totalSessions = 0;
 
-  if (inputs.agenticCostEnabled) {
-    perSessionCost = calculateCostPerSession(inputs);
-
-    // Estimate total sessions this month from retained customers × tier usage
-    const retainedCustomers = context.totalRetained || 0;
-    if (inputs.pricingTiers && inputs.pricingTiers.length > 0) {
-      for (const tier of inputs.pricingTiers) {
-        const tieredCustomers = Math.round(retainedCustomers * (tier.distribution || 0));
-        totalSessions += tieredCustomers * (tier.sessionsPerMonth || 0);
-      }
+  const retainedCustomers = context.totalRetained || 0;
+  if (inputs.pricingTiers && inputs.pricingTiers.length > 0) {
+    for (const tier of inputs.pricingTiers) {
+      const tieredCustomers = Math.round(retainedCustomers * (tier.distribution || 0));
+      totalSessions += tieredCustomers * (tier.sessionsPerMonth || 0);
     }
   }
 
@@ -101,15 +96,9 @@ export function calculateMonthlyCosts(inputs, grossRevenue, context = {}) {
 
     let value;
     if (category.type === 'per_session') {
-      if (inputs.agenticCostEnabled) {
-        // Use the specific component (llm, infra, or tools) for this category
-        const componentKey = category.sessionCostKey;
-        const componentCost = componentKey ? perSessionCost[componentKey] : perSessionCost.total;
-        value = componentCost * totalSessions;
-      } else {
-        // Backward compat: fall back to % of revenue
-        value = grossRevenue * (inputs[category.inputKey] || 0);
-      }
+      const componentKey = category.sessionCostKey;
+      const componentCost = componentKey ? perSessionCost[componentKey] : perSessionCost.total;
+      value = componentCost * totalSessions;
     } else {
       value = calculator(inputs, category.inputKey, grossRevenue, enrichedContext);
     }

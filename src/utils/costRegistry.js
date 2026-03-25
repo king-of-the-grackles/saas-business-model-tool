@@ -11,11 +11,9 @@
 export const COST_CATEGORIES = [
   // COGS (Cost of Goods Sold)
   { key: 'ccFees',    name: 'CC Fees',           group: 'cogs', type: 'revenue_pct',  color: '#06b6d4', inputKey: 'ccProcessingFees' },
-  { key: 'inference', name: 'LLM Inference',     group: 'cogs', type: 'per_session',  color: '#ef4444', inputKey: 'inferenceCosts', sessionCostKey: 'llm' },
-  { key: 'infra',     name: 'Infrastructure',    group: 'cogs', type: 'per_session',  color: '#0d9488', inputKey: null,             sessionCostKey: 'infra' },
-  { key: 'tools',     name: 'Third-Party Tools', group: 'cogs', type: 'per_session',  color: '#8b5cf6', inputKey: null,             sessionCostKey: 'tools' },
-  { key: 'inventory', name: 'Inventory',         group: 'cogs', type: 'revenue_pct',  color: '#ec4899', inputKey: 'inventoryCosts' },
-  { key: 'delivery',  name: 'Delivery',          group: 'cogs', type: 'revenue_pct',  color: '#6366f1', inputKey: 'deliveryCosts' },
+  { key: 'inference', name: 'LLM Inference',     group: 'cogs', type: 'per_session',  color: '#ef4444', inputKey: null, sessionCostKey: 'llm' },
+  { key: 'infra',     name: 'Infrastructure',    group: 'cogs', type: 'per_session',  color: '#0d9488', inputKey: null, sessionCostKey: 'infra' },
+  { key: 'tools',     name: 'Third-Party Tools', group: 'cogs', type: 'per_session',  color: '#8b5cf6', inputKey: null, sessionCostKey: 'tools' },
 
   // Operating Expenses
   { key: 'cac',       name: 'CAC',               group: 'opex', type: 'per_customer', color: '#f59e0b', inputKey: null },
