@@ -80,8 +80,8 @@ export default function App() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left Sidebar - Inputs */}
-          <div className="lg:w-80 flex-shrink-0 space-y-6">
+          {/* Left Sidebar - Inputs (sticky, scrolls independently) */}
+          <div className="lg:w-96 flex-shrink-0 lg:sticky lg:top-[105px] lg:max-h-[calc(100vh-130px)] lg:overflow-y-auto lg:scrollbar-thin space-y-6">
             <div className="animate-fade-in-up opacity-0 stagger-1">
               <InputPanel inputs={inputs} onInputChange={updateInput} />
             </div>
@@ -105,7 +105,7 @@ export default function App() {
                 <div className="animate-fade-in-up opacity-0 stagger-3">
                   <ChartsPanel
                     results={results}
-                    selectedCharts={['monthly-profitability']}
+                    selectedCharts={['monthly-profitability', 'cost-breakdown']}
                   />
                 </div>
               </div>

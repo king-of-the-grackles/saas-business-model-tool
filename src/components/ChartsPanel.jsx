@@ -14,6 +14,7 @@ import {
   ReferenceLine,
 } from 'recharts';
 import { formatCurrency, formatNumber, calculateARPU, getTotalDistribution } from '../utils/calculations';
+import { COST_CATEGORIES } from '../utils/costRegistry';
 
 // Brand-aligned color palette
 const chartColors = {
@@ -503,18 +504,8 @@ export default function ChartsPanel({ results, selectedCharts = null, compact = 
 
       {/* Cost Breakdown */}
       {showChart('cost-breakdown') && (() => {
-        // Define all cost categories with their display config
-        const costCategories = [
-          { key: 'cac', name: 'CAC', color: '#f59e0b' },
-          { key: 'staffing', name: 'Staffing', color: '#8b5cf6' },
-          { key: 'ccFees', name: 'CC Fees', color: '#06b6d4' },
-          { key: 'inference', name: 'Inference/COGS', color: '#ef4444' },
-          { key: 'office', name: 'Office', color: '#64748b' },
-          { key: 'insurance', name: 'Insurance', color: '#10b981' },
-          { key: 'rent', name: 'Rent', color: '#d97706' },
-          { key: 'inventory', name: 'Inventory', color: '#ec4899' },
-          { key: 'delivery', name: 'Delivery', color: '#6366f1' },
-        ];
+        // Cost categories from central registry (add new costs in costRegistry.js)
+        const costCategories = COST_CATEGORIES;
 
         // Filter to only categories with non-zero values
         const activeCosts = costCategories.filter(cat =>

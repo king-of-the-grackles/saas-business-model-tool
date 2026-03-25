@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { formatCurrency, formatPercent, formatNumber, calculateCACFromAdSpend } from '../utils/calculations';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { formatCurrency, formatPercent, formatNumber, calculateCACFromAdSpend, calculateCostPerSession, MODEL_PRESETS, PRICING_MODELS } from '../utils/calculations';
 import { inputTooltips } from '../utils/benchmarkComparison';
 import Tooltip, { InfoIcon } from './Tooltip';
 import TierManager from './TierManager';
@@ -182,10 +182,100 @@ function PercentInput({ label, value, onChange, min = 0, max = 1, step = 0.001, 
   );
 }
 
+function formatInputsForClipboard(inputs) {
+  const preset = MODEL_PRESETS[inputs.modelPreset];
+  const modelName = preset ? preset.name : inputs.modelPreset;
+  const cac = calculateCACFromAdSpend(inputs.monthlyAdSpend, inputs.startingPaidTraffic, inputs.conversionRate);
+  const paidCustomers = Math.round(inputs.startingPaidTraffic * inputs.conversionRate);
+  const perSession = calculateCostPerSession(inputs);
+
+  const tiers = inputs.pricingTiers
+    .map(t => `  - ${t.name}: $${t.monthlyPrice}/mo (${(t.distribution * 100).toFixed(0)}% of customers, ${t.sessionsPerMonth} sessions/mo)`)
+    .join('\n');
+
+  let text = `SaaS Business Model Assumptions
+================================
+
+Target
+- Min Success Criteria (Net Profit FY3): ${formatCurrency(inputs.minimumSuccessCriteria)}
+
+Traffic & Acquisition
+- Starting Monthly Paid Traffic: ${formatNumber(inputs.startingPaidTraffic)} visitors
+- Monthly Traffic Growth Rate: ${(inputs.monthlyGrowthRate * 100).toFixed(1)}%
+- Organic Traffic: ${formatNumber(inputs.organicTraffic)}/mo
+- Conversion Rate: ${(inputs.conversionRate * 100).toFixed(1)}%
+- Monthly Ad Spend: ${formatCurrency(inputs.monthlyAdSpend)}
+- Calculated CAC: ${formatCurrency(cac)} (${formatNumber(paidCustomers)} paid customers/mo)
+
+Retention
+- Customer Referral Rate: ${(inputs.customerReferralRate * 100).toFixed(1)}%
+- Monthly Churn Rate: ${(inputs.monthlyChurn * 100).toFixed(1)}%
+
+Pricing & Packaging
+- Pricing Model: ${inputs.pricingModel}
+- Tiers:
+${tiers}
+
+COGS (% of revenue)
+- CC Processing Fees: ${(inputs.ccProcessingFees * 100).toFixed(1)}%
+- Inference Costs: 0.0%
+- Delivery Costs: 0.0%
+- Inventory Costs: 0.0%
+
+Operating Expenses
+- Staffing: ${(inputs.staffingCosts * 100).toFixed(1)}% of revenue
+- Office/Equipment: ${(inputs.officeSupplies * 100).toFixed(1)}% of revenue
+- Business Insurance: ${(inputs.businessInsurance * 100).toFixed(1)}% of revenue
+- Monthly Rent: ${formatCurrency(inputs.rent)}
+
+Agentic Unit Economics (enabled)
+- LLM Model: ${modelName}
+- Token Pricing (per 1M tokens): Input $${inputs.inputTokenPrice} / Output $${inputs.outputTokenPrice} / Cached $${inputs.cachedInputPrice}
+- Avg Input Tokens/Call: ${formatNumber(inputs.avgInputTokensPerCall)}
+- Avg Output Tokens/Call: ${formatNumber(inputs.avgOutputTokensPerCall)}
+- Cache Hit Rate: ${(inputs.cacheHitRate * 100).toFixed(0)}%
+- LLM Calls/Session: ${inputs.avgLLMCallsPerSession}
+- Avg Session Duration: ${inputs.avgSessionDuration}s
+- Tool Calls/Session: ${inputs.avgToolCallsPerSession}
+- Paid Tool %: ${(inputs.paidToolCallPct * 100).toFixed(0)}%
+- Cost/Paid Tool Call: $${inputs.avgCostPerPaidToolCall}
+- Cost/Session: $${perSession.total.toFixed(4)} (LLM: $${perSession.llm.toFixed(4)}, Infra: $${perSession.infra.toFixed(4)}, Tools: $${perSession.tools.toFixed(4)})`;
+
+  return text;
+}
+
 export default function InputPanel({ inputs, onInputChange }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(async () => {
+    const text = formatInputsForClipboard(inputs);
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [inputs]);
+
   return (
     <div className="card p-6">
-      <h2 className="text-lg font-bold text-brand-800 mb-6">Model Assumptions</h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-lg font-bold text-brand-800">Model Assumptions</h2>
+        <button
+          onClick={handleCopy}
+          className={`p-1.5 rounded-md transition-colors ${
+            copied ? 'text-green-500' : 'text-gray-300 hover:text-gray-500'
+          }`}
+          title="Copy all assumptions for LLM context"
+        >
+          {copied ? (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          )}
+        </button>
+      </div>
 
       {/* Target - Always visible */}
       <CollapsibleSection title="Target" defaultOpen={true}>
@@ -313,45 +403,215 @@ export default function InputPanel({ inputs, onInputChange }) {
       </CollapsibleSection>
 
       {/* Pricing */}
-      <CollapsibleSection title="Pricing" defaultOpen={false}>
+      <CollapsibleSection title="Pricing & Packaging" defaultOpen={false}>
+        {/* Pricing model selector */}
+        <div className="mb-4">
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Pricing Model</label>
+          <div className="grid grid-cols-2 gap-1.5">
+            {PRICING_MODELS.map(model => (
+              <button
+                key={model.key}
+                onClick={() => onInputChange('pricingModel', model.key)}
+                className={`p-2 rounded-lg border text-left transition-all ${
+                  inputs.pricingModel === model.key
+                    ? 'border-accent-500 bg-accent-50 ring-1 ring-accent-500/30'
+                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                }`}
+              >
+                <div className="text-xs font-semibold text-gray-800">{model.name}</div>
+                <div className="text-xs text-gray-400 leading-tight">{model.description}</div>
+              </button>
+            ))}
+          </div>
+        </div>
         <TierManager
           tiers={inputs.pricingTiers}
           onTiersChange={(newTiers) => onInputChange('pricingTiers', newTiers)}
+          costPerSession={calculateCostPerSession(inputs).total}
+          pricingModel={inputs.pricingModel || 'flat'}
         />
       </CollapsibleSection>
 
-      {/* COGS - Cost of Goods Sold */}
-      <CollapsibleSection title="COGS (Cost of Goods Sold)" subtitle="% of monthly revenue" defaultOpen={false}>
-        <div className="grid grid-cols-2 gap-4">
-          <PercentInput
-            label="CC Fees"
-            value={inputs.ccProcessingFees}
-            onChange={(v) => onInputChange('ccProcessingFees', v)}
-            max={0.1}
-            tooltip={inputTooltips.ccProcessingFees}
-          />
-          <PercentInput
-            label="Inference Costs"
-            value={inputs.inferenceCosts}
-            onChange={(v) => onInputChange('inferenceCosts', v)}
-            max={0.5}
-            tooltip={inputTooltips.inferenceCosts}
-          />
-          <PercentInput
-            label="Delivery Costs"
-            value={inputs.deliveryCosts}
-            onChange={(v) => onInputChange('deliveryCosts', v)}
-            max={0.3}
-            tooltip={inputTooltips.deliveryCosts}
-          />
-          <PercentInput
-            label="Inventory Costs"
-            value={inputs.inventoryCosts}
-            onChange={(v) => onInputChange('inventoryCosts', v)}
-            max={0.5}
-            tooltip={inputTooltips.inventoryCosts}
-          />
-        </div>
+      {/* Session Economics */}
+      <CollapsibleSection
+        title="Session Economics"
+        subtitle={`$${(calculateCostPerSession(inputs).total).toFixed(4)}/session`}
+        defaultOpen={false}
+      >
+            {/* Cost Breakdown — FIRST, the payoff. Updates live as levers change below. */}
+            {(() => {
+              const perSession = calculateCostPerSession(inputs);
+              const total = perSession.total;
+              const llmPct = total > 0 ? (perSession.llm / total * 100) : 0;
+              const infraPct = total > 0 ? (perSession.infra / total * 100) : 0;
+              const toolsPct = total > 0 ? (perSession.tools / total * 100) : 0;
+
+              return (
+                <div className="p-3 mb-4 bg-brand-50 rounded-lg border border-brand-200">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-sm font-semibold text-brand-800">Cost per Session</span>
+                    <span className="text-lg font-bold font-mono text-brand-700">${total.toFixed(4)}</span>
+                  </div>
+                  <div className="flex h-2.5 rounded-full overflow-hidden mb-2">
+                    <div style={{ width: `${llmPct}%` }} className="bg-red-400 transition-all duration-300" title={`LLM: ${llmPct.toFixed(0)}%`} />
+                    <div style={{ width: `${infraPct}%` }} className="bg-teal-400 transition-all duration-300" title={`Infra: ${infraPct.toFixed(0)}%`} />
+                    <div style={{ width: `${toolsPct}%` }} className="bg-purple-400 transition-all duration-300" title={`Tools: ${toolsPct.toFixed(0)}%`} />
+                  </div>
+                  <div className="flex justify-between text-xs text-gray-600">
+                    <span><span className="inline-block w-2 h-2 rounded-full bg-red-400 mr-1" />LLM ${perSession.llm.toFixed(4)}</span>
+                    <span><span className="inline-block w-2 h-2 rounded-full bg-teal-400 mr-1" />Infra ${perSession.infra.toFixed(4)}</span>
+                    <span><span className="inline-block w-2 h-2 rounded-full bg-purple-400 mr-1" />Tools ${perSession.tools.toFixed(4)}</span>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Model Preset Cards — with $/session estimate */}
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">LLM Model</label>
+              <div className="grid grid-cols-2 gap-2">
+                {Object.entries(MODEL_PRESETS).filter(([k]) => k !== 'custom').map(([key, preset]) => {
+                  const isActive = inputs.modelPreset === key;
+                  // Compute estimated $/session for this preset
+                  const estInputs = { ...inputs, inputTokenPrice: preset.inputTokenPrice, outputTokenPrice: preset.outputTokenPrice, cachedInputPrice: preset.cachedInputPrice };
+                  const estCost = calculateCostPerSession(estInputs).total;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        const updates = { modelPreset: key };
+                        if (preset.inputTokenPrice !== null) {
+                          updates.inputTokenPrice = preset.inputTokenPrice;
+                          updates.outputTokenPrice = preset.outputTokenPrice;
+                          updates.cachedInputPrice = preset.cachedInputPrice;
+                        }
+                        Object.entries(updates).forEach(([k, v]) => onInputChange(k, v));
+                      }}
+                      className={`p-2.5 rounded-lg border text-left transition-all ${
+                        isActive
+                          ? 'border-accent-500 bg-accent-50 ring-1 ring-accent-500/30'
+                          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="text-xs font-semibold text-gray-800">{preset.name}</div>
+                      <div className="text-xs text-gray-500 font-mono mt-0.5">
+                        ${preset.inputTokenPrice} / ${preset.outputTokenPrice}
+                      </div>
+                      <div className={`text-xs font-mono mt-1 ${isActive ? 'text-accent-700 font-semibold' : 'text-gray-400'}`}>
+                        ~${estCost.toFixed(3)}/sess
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Token Economics (Layer 0) */}
+            <div className="mb-4 pb-4 border-b border-gray-100">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Token Pricing ($/1M tokens)</label>
+              <div className="grid grid-cols-3 gap-3">
+                <NumberInput
+                  label="Input"
+                  value={inputs.inputTokenPrice}
+                  onChange={(v) => onInputChange('inputTokenPrice', v)}
+                  min={0} max={100} step={0.1}
+                  prefix="$"
+                />
+                <NumberInput
+                  label="Output"
+                  value={inputs.outputTokenPrice}
+                  onChange={(v) => onInputChange('outputTokenPrice', v)}
+                  min={0} max={500} step={0.5}
+                  prefix="$"
+                />
+                <NumberInput
+                  label="Cached"
+                  value={inputs.cachedInputPrice}
+                  onChange={(v) => onInputChange('cachedInputPrice', v)}
+                  min={0} max={50} step={0.01}
+                  prefix="$"
+                />
+              </div>
+            </div>
+
+            {/* Per-Call Metrics (Layer 1) */}
+            <div className="mb-4 pb-4 border-b border-gray-100">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Per LLM Call</label>
+              <div className="grid grid-cols-2 gap-3">
+                <NumberInput
+                  label="Input tokens/call"
+                  value={inputs.avgInputTokensPerCall}
+                  onChange={(v) => onInputChange('avgInputTokensPerCall', v)}
+                  min={100} max={500000} step={500}
+                />
+                <NumberInput
+                  label="Output tokens/call"
+                  value={inputs.avgOutputTokensPerCall}
+                  onChange={(v) => onInputChange('avgOutputTokensPerCall', v)}
+                  min={1} max={50000} step={10}
+                />
+              </div>
+              <SliderInput
+                label="Cache Hit Rate"
+                value={inputs.cacheHitRate}
+                onChange={(v) => onInputChange('cacheHitRate', v)}
+                min={0} max={1} step={0.01}
+                format="percent"
+                hint="% of input tokens served from prompt cache"
+              />
+            </div>
+
+            {/* Session Metrics (Layer 2) */}
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Per Session</label>
+              <NumberInput
+                label="LLM calls per session"
+                value={inputs.avgLLMCallsPerSession}
+                onChange={(v) => onInputChange('avgLLMCallsPerSession', v)}
+                min={1} max={50} step={0.1}
+              />
+              <NumberInput
+                label="Avg session duration (seconds)"
+                value={inputs.avgSessionDuration}
+                onChange={(v) => onInputChange('avgSessionDuration', v)}
+                min={1} max={600} step={1}
+                suffix="s"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <NumberInput
+                  label="Tool calls/session"
+                  value={inputs.avgToolCallsPerSession}
+                  onChange={(v) => onInputChange('avgToolCallsPerSession', v)}
+                  min={0} max={50} step={0.1}
+                />
+                <NumberInput
+                  label="% paid tools"
+                  value={inputs.paidToolCallPct * 100}
+                  onChange={(v) => onInputChange('paidToolCallPct', v / 100)}
+                  min={0} max={100} step={1}
+                  suffix="%"
+                />
+              </div>
+              <NumberInput
+                label="Cost per paid tool call"
+                value={inputs.avgCostPerPaidToolCall}
+                onChange={(v) => onInputChange('avgCostPerPaidToolCall', v)}
+                min={0} max={1} step={0.001}
+                prefix="$"
+              />
+            </div>
+      </CollapsibleSection>
+
+      {/* COGS - CC Processing Only */}
+      <CollapsibleSection title="COGS" subtitle="CC processing + per-session costs above" defaultOpen={false}>
+        <PercentInput
+          label="CC Processing Fees"
+          value={inputs.ccProcessingFees}
+          onChange={(v) => onInputChange('ccProcessingFees', v)}
+          max={0.1}
+          hint="Stripe/payment processor fee (typically 2.5-2.9%)"
+          tooltip={inputTooltips.ccProcessingFees}
+        />
       </CollapsibleSection>
 
       {/* Operating Expenses */}

@@ -19,7 +19,7 @@ function UnlockIcon({ className }) {
   );
 }
 
-function TierRow({ tier, onUpdate, onDelete, onToggleLock, canDelete, showLockToggle }) {
+function TierRow({ tier, onUpdate, onDelete, onToggleLock, canDelete, showLockToggle, costPerSession, pricingModel }) {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState(tier.name);
   const [priceValue, setPriceValue] = useState(tier.monthlyPrice.toString());
@@ -178,7 +178,103 @@ function TierRow({ tier, onUpdate, onDelete, onToggleLock, canDelete, showLockTo
             <span className="text-xs text-gray-400 ml-1">(locked)</span>
           )}
         </div>
+        {/* Sessions per month */}
+        <div className="flex items-center gap-1">
+          <input
+            type="number"
+            value={tier.sessionsPerMonth || 0}
+            onChange={(e) => onUpdate({ ...tier, sessionsPerMonth: parseInt(e.target.value) || 0 })}
+            className="w-20 px-2 py-1.5 text-sm font-mono border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+            min="0"
+            step="10"
+          />
+          <span className="text-gray-400 text-sm">sessions/mo</span>
+        </div>
+        {/* Credit/Hybrid: overage fields */}
+        {(pricingModel === 'credit' || pricingModel === 'hybrid') && (
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              value={tier.creditsIncluded || tier.includedSessions || 0}
+              onChange={(e) => onUpdate({ ...tier, creditsIncluded: parseInt(e.target.value) || 0, includedSessions: parseInt(e.target.value) || 0 })}
+              className="w-16 px-2 py-1.5 text-sm font-mono border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+              min="0"
+            />
+            <span className="text-gray-400 text-sm">included</span>
+            <span className="text-gray-300 text-sm mx-0.5">+</span>
+            <span className="text-gray-400 text-sm">$</span>
+            <input
+              type="number"
+              value={tier.overageRate || 0}
+              onChange={(e) => onUpdate({ ...tier, overageRate: parseFloat(e.target.value) || 0 })}
+              className="w-14 px-2 py-1.5 text-sm font-mono border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+              min="0"
+              step="0.01"
+            />
+            <span className="text-gray-400 text-sm">/extra</span>
+          </div>
+        )}
+        {/* Usage-based: per-session rate + base fee */}
+        {pricingModel === 'usage' && (
+          <div className="flex items-center gap-1">
+            <span className="text-gray-400 text-sm">$</span>
+            <input
+              type="number"
+              value={tier.baseFee || 0}
+              onChange={(e) => onUpdate({ ...tier, baseFee: parseFloat(e.target.value) || 0 })}
+              className="w-14 px-2 py-1.5 text-sm font-mono border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+              min="0"
+              step="1"
+            />
+            <span className="text-gray-400 text-sm">base +</span>
+            <span className="text-gray-400 text-sm">$</span>
+            <input
+              type="number"
+              value={tier.perSessionRate || 0}
+              onChange={(e) => onUpdate({ ...tier, perSessionRate: parseFloat(e.target.value) || 0 })}
+              className="w-14 px-2 py-1.5 text-sm font-mono border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500"
+              min="0"
+              step="0.01"
+            />
+            <span className="text-gray-400 text-sm">/sess</span>
+          </div>
+        )}
       </div>
+
+      {/* Inline margin bar */}
+      {costPerSession > 0 && (
+        <div className="mt-2.5 pt-2.5 border-t border-gray-100">
+          {(() => {
+            const sessions = tier.sessionsPerMonth || 0;
+            const cogs = sessions * costPerSession;
+            const revenue = tier.monthlyPrice || 0;
+            const profit = revenue - cogs;
+            const margin = revenue > 0 ? (profit / revenue) : (cogs > 0 ? -1 : 0);
+            const marginPct = Math.max(0, Math.min(100, margin * 100));
+            const barColor = margin < 0 ? 'bg-red-400' : margin < 0.5 ? 'bg-amber-400' : margin < 0.75 ? 'bg-emerald-400' : 'bg-teal-500';
+            const textColor = margin < 0 ? 'text-red-600' : margin < 0.5 ? 'text-amber-600' : 'text-emerald-600';
+
+            return (
+              <>
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className="flex-1 h-2 rounded-full overflow-hidden bg-gray-100">
+                    <div style={{ width: `${marginPct}%` }} className={`h-full ${barColor} rounded-full transition-all duration-300`} />
+                  </div>
+                  <span className={`text-xs font-mono font-bold ${textColor} whitespace-nowrap`}>
+                    {margin < 0 ? `−∞%` : formatPercent(margin)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>Rev {formatCurrency(revenue)} · COGS {formatCurrency(Math.round(cogs))}</span>
+                  <span className={`font-mono ${textColor}`}>
+                    {margin < 0 ? `−${formatCurrency(Math.abs(profit))}/mo` : `+${formatCurrency(Math.round(profit))}/mo`}
+                  </span>
+                </div>
+              </>
+            );
+          })()}
+        </div>
+      )}
     </div>
   );
 }
@@ -215,7 +311,7 @@ function redistributeDistribution(tiers, changedTierId, newValue) {
   });
 }
 
-export default function TierManager({ tiers, onTiersChange }) {
+export default function TierManager({ tiers, onTiersChange, costPerSession = 0, pricingModel = 'flat' }) {
   const handleAddTier = () => {
     // New tier takes 10% from unlocked tiers proportionally
     const unlockedSum = tiers
@@ -237,6 +333,7 @@ export default function TierManager({ tiers, onTiersChange }) {
       monthlyPrice: 49,
       distribution: takeFromUnlocked,
       isLocked: false,
+      sessionsPerMonth: 50,
     };
 
     onTiersChange([...adjustedTiers, newTier]);
@@ -325,6 +422,8 @@ export default function TierManager({ tiers, onTiersChange }) {
             onToggleLock={handleToggleLock}
             canDelete={canDelete}
             showLockToggle={showLockToggle}
+            costPerSession={costPerSession}
+            pricingModel={pricingModel}
           />
         ))}
       </div>
