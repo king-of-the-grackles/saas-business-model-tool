@@ -34,9 +34,37 @@ export default function App() {
           {/* Row 1: Title + Reset */}
           <div className="py-3 flex justify-between items-center animate-fade-in">
             <div>
-              <h1 className="text-xl font-bold text-brand-800">Revenue Lab</h1>
-              <p className="text-xs text-brand-500">SaaS revenue modeling & scenario planning</p>
-            </div>
+              <h1 className="flex items-center gap-2 text-xl font-bold text-brand-800">
+                <svg
+                  className="w-6 h-6 text-accent-500 flex-shrink-0"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M9 3l0 7" />
+                  <path d="M15 3l0 7" />
+                  <path d="M9 3l6 0" />
+                  <path d="M5 21l14 0" />
+                  <path d="M5 21l4 -14" />
+                  <path d="M19 21l-4 -14" />
+                </svg>
+                Revenue Lab
+              </h1>
+                <p className="text-xs text-brand-400">Financial modeling for AI products.</p>
+                <a
+                  href="https://dialog.tools/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[10px] text-brand-400 hover:text-accent-600 transition-colors"
+                >
+                  Built by the team at
+                  <img src="/dialog-logo.png" alt="Dialog" className="w-3 h-3 rounded-sm inline-block" />
+                  Dialog
+                </a>
+              </div>
             <div className="flex items-center gap-2">
               <a
                 href="https://github.com/king-of-the-grackles/saas-business-model-tool/issues/new"
